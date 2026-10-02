@@ -1,0 +1,6 @@
+# Monorepo kökü — alt projelerin kendi .gitignore dosyaları da geçerlidir.
+.DS_Store
+node_modules/
+.env
+.env*.local
+*.log

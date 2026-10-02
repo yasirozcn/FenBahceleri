@@ -1,0 +1,24 @@
+# Yerel geliştirme için PostgreSQL. Kullanım: `npm run db:up` (ayrıntı: POSTGRESQL_KURULUM.md)
+# Şifre .env.local içindeki POSTGRES_PASSWORD'den okunur. Canlıda bu dosya değil, yönetilen PostgreSQL kullanılır.
+services:
+  postgres:
+    image: postgres:17
+    container_name: fenbahceleri-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fb_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?.env.local içinde POSTGRES_PASSWORD tanımlayın}
+      POSTGRES_DB: fenbahceleri
+      TZ: Europe/Istanbul
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fb_app -d fenbahceleri"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
