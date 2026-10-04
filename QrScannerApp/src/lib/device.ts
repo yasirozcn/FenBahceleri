@@ -34,10 +34,11 @@ export async function getDeviceIdentity(): Promise<DeviceIdentity> {
   return cached;
 }
 
-/** Bu telefona bağlanmış öğrencinin e-postası (bir telefonda tek öğrenci). */
-export const getBoundEmail = () => SecureStore.getItemAsync(K.boundEmail, opts);
-export const setBoundEmail = (email: string) => SecureStore.setItemAsync(K.boundEmail, email.trim().toLowerCase(), opts);
-/** Yönetici cihazı sıfırladıysa telefonun yerel bağlantısı da temizlenir. */
+/**
+ * Yönetici cihazı sıfırladıysa telefondaki oturum temizlenir.
+ * (boundEmail: eski sürümlerin sakladığı yerel bağlantı; artık kullanılmıyor, yalnızca siliniyor.
+ *  Cihaz-hesap bağlantısının tek kaynağı sunucudur.)
+ */
 export async function clearBinding() {
   await SecureStore.deleteItemAsync(K.boundEmail, opts);
   await SecureStore.deleteItemAsync(K.studentToken, opts);

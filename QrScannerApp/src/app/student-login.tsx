@@ -3,7 +3,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text } from "react-native";
 import { Button, ErrorBox, Field, InfoBox, Screen, Title } from "@/components/ui";
 import { api, ApiError, type AuthResponse } from "@/lib/api";
-import { getBoundEmail, getDeviceIdentity, setBoundEmail } from "@/lib/device";
+import { getDeviceIdentity } from "@/lib/device";
 import { useSession } from "@/lib/session";
 
 type Step = "email" | "create-password" | "password";
@@ -37,9 +37,7 @@ export default function StudentLogin() {
     run(async () => {
       const normalized = email.trim().toLowerCase();
       if (!normalized.includes("@")) throw new ApiError(400, "Geçerli bir e-posta girin.", "BAD_EMAIL");
-      const bound = await getBoundEmail();
-      if (bound && bound !== normalized)
-        throw new ApiError(409, "Bu telefon başka bir öğrenci hesabına bağlı. Bir telefonda yalnızca bir öğrenci hesabı kullanılabilir.", "DEVICE_TAKEN");
+      // "Bu telefon başka hesaba bağlı" kararını yalnızca sunucu verir (check-email → DEVICE_TAKEN).
       const { deviceId } = await getDeviceIdentity();
       const r = await api<{ next: "create-password" | "password"; firstName: string }>("/api/mobile/student/check-email", { method: "POST", body: { email: normalized, deviceId } });
       setFirstName(r.firstName);
@@ -49,7 +47,6 @@ export default function StudentLogin() {
     });
 
   const finish = async (r: AuthResponse) => {
-    await setBoundEmail(email);
     await setStudentSession(r.token, r.student);
     router.replace("/student-home");
   };
