@@ -3,7 +3,8 @@
 //
 // Kullanım (AdminPanel çalışırken):
 //   swift tools/mac-kiosk-beacon.swift
-//   swift tools/mac-kiosk-beacon.swift --kiosk kiosk_cikis
+//   swift tools/mac-kiosk-beacon.swift --kiosk kiosk_cikis     (verilmezse ilk giriş kiosku; yanlışsa mevcut liste yazılır)
+//   Canlı sunucu: swift tools/mac-kiosk-beacon.swift --api https://ALAN-ADI --email kapi@okul.com --password '...' 
 //   swift tools/mac-kiosk-beacon.swift --api http://localhost:3000 --email kapi@fenbahceleri.test --password Kapi12345
 //   swift tools/mac-kiosk-beacon.swift --no-ble        (yalnızca QR)
 //
@@ -20,7 +21,7 @@ import Foundation
 
 // ---------------------------------------------------------------- argümanlar
 
-var opts: [String: String] = ["api": "http://localhost:3000", "email": "kapi@fenbahceleri.test", "password": "Kapi12345", "kiosk": "kiosk_giris"]
+var opts: [String: String] = ["api": "http://localhost:3000", "email": "kapi@fenbahceleri.test", "password": "Kapi12345", "kiosk": ""]
 var useBle = true
 var argv = Array(CommandLine.arguments.dropFirst())
 while !argv.isEmpty {
@@ -42,9 +43,9 @@ var logLines: [String] = []
 
 // ---------------------------------------------------------------- sunucu
 
-func request(_ path: String, token: String? = nil, body: [String: Any]? = nil) -> [String: Any] {
+func request(_ path: String, token: String? = nil, body: [String: Any]? = nil, method: String = "POST") -> [String: Any] {
   var req = URLRequest(url: URL(string: opts["api"]! + path)!)
-  req.httpMethod = "POST"
+  req.httpMethod = method
   req.setValue("application/json", forHTTPHeaderField: "Content-Type")
   if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
   if let body { req.httpBody = try! JSONSerialization.data(withJSONObject: body) }
@@ -66,7 +67,17 @@ func request(_ path: String, token: String? = nil, body: [String: Any]? = nil) -
 print("Sunucuya bağlanılıyor: \(opts["api"]!) …")
 let login = request("/api/mobile/admin/login", body: ["email": opts["email"]!, "password": opts["password"]!])
 let token = login["token"] as! String
-let start = request("/api/mobile/kiosks/\(opts["kiosk"]!)/start", token: token)
+// Kiosk seçimi: --kiosk verilmezse ilk GİRİŞ kiosku (canlıda kimlikler panelde oluşturulurken rastgele üretilir).
+let kiosks = (request("/api/mobile/kiosks", token: token, method: "GET")["kiosks"] as? [[String: Any]]) ?? []
+let chosen = opts["kiosk"]!.isEmpty
+  ? (kiosks.first { ($0["direction"] as? String) == "ENTRY" } ?? kiosks.first)
+  : kiosks.first { ($0["id"] as? String) == opts["kiosk"] }
+guard let chosen, let chosenId = chosen["id"] as? String else {
+  print("Kiosk bulunamadı. Panelde kiosk ekleyin. Mevcut kiosklar (--kiosk ile seçin):")
+  for k in kiosks { print("  \(k["id"] ?? "") — \(k["name"] ?? "") (\(k["direction"] ?? ""))") }
+  exit(1)
+}
+let start = request("/api/mobile/kiosks/\(chosenId)/start", token: token)
 let kiosk = start["kiosk"] as! [String: Any]
 let kioskId = kiosk["id"] as! String
 let kioskName = kiosk["name"] as! String
