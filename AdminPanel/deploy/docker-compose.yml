@@ -12,8 +12,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?deploy/.env içinde POSTGRES_PASSWORD tanımlayın}
       POSTGRES_DB: fenbahceleri
       TZ: Europe/Istanbul
-    # 1 GB RAM'li sunucu için küçük ayarlar. Port dışarı AÇILMAZ: veritabanına yalnızca app konteyneri erişir.
+    # 1 GB RAM'li sunucu için küçük ayarlar.
     command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30", "-c", "work_mem=2MB"]
+    # Port yalnızca sunucunun KENDİSİNE açılır (127.0.0.1); internetten erişilemez.
+    # Bilgisayarınızdan bağlanmak için SSH tüneli kullanın (TablePlus/DBeaver "Over SSH") — CANLIYA_ALMA.md
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

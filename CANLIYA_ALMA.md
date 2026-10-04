@@ -113,10 +113,47 @@ docker compose exec app node scripts/create-admin.mjs --email kapi@okulunuz.com 
 ```
 
 Aynı komut aynı e-postayla tekrar çalıştırılırsa şifre güncellenir (şifre unutulursa).
+Betik doğrudan veritabanına (`admin_users` tablosu) yazar; tek farkı şifreyi panelin beklediği bcrypt özetine çevirmesidir. SQL ile eklemek isterseniz önce özeti üretmeniz gerekir (bkz. 5b).
 
 Ardından panelde (`https://ALAN-ADI/login`):
 1. **Kiosklar** → "Ana Kapı Giriş" (Giriş) ve "Ana Kapı Çıkış" (Çıkış) ekleyin.
 2. **Öğrenciler** → öğrencileri e-posta ve veli telefonuyla ekleyin.
+
+## 5b. Veritabanına erişim
+
+Veritabanı sunucudaki Docker'da çalışır; 5432 portu **yalnızca sunucunun kendisine** açıktır (internetten erişilemez, Lightsail güvenlik duvarında da açmayın).
+
+**A) Sunucunun terminalinden (en hızlı)** — Lightsail → Connect using SSH:
+```bash
+cd ~/FenBahceleri/AdminPanel/deploy
+docker compose exec db psql -U fb_app -d fenbahceleri
+```
+```sql
+\dt                                         -- tablolar
+SELECT full_name, email, role FROM admin_users;
+SELECT first_name, last_name, email, class_name FROM students;
+\q
+```
+
+**B) Kendi bilgisayarınızdan görsel programla (TablePlus / DBeaver / Postico), SSH tüneliyle:**
+1. Lightsail → sağ üst **Account → SSH keys** → bölgenin (Frankfurt) **varsayılan anahtarını indirin** (`LightsailDefaultKey-eu-central-1.pem`).
+   Mac'te: `chmod 600 ~/Downloads/LightsailDefaultKey-eu-central-1.pem`
+2. Veritabanı şifresi: sunucuda `grep POSTGRES_PASSWORD ~/FenBahceleri/AdminPanel/deploy/.env`
+3. TablePlus → yeni PostgreSQL bağlantısı → **Over SSH**:
+
+| Alan | Değer |
+| --- | --- |
+| Host / Port | `127.0.0.1` / `5432` |
+| User / Database | `fb_app` / `fenbahceleri` |
+| Password | `.env`'deki `POSTGRES_PASSWORD` |
+| SSH Server / Port | `18.196.144.201` (statik IP) / `22` |
+| SSH User | `ubuntu` |
+| SSH Key | indirdiğiniz `.pem` dosyası |
+
+Program önce SSH ile sunucuya girer, oradan sunucunun içindeki veritabanına bağlanır; veritabanı internete hiç açılmaz.
+
+> Canlı veritabanında elle değişiklik yapmadan önce `bash yedek-al.sh` ile yedek alın.
+> Şifreler `password_hash` kolonunda bcrypt özeti olarak durur; elle yazılamaz — yönetici şifresi için `create-admin.mjs`, öğrenci şifresi için paneldeki **Şifreyi sıfırla** kullanılır.
 
 ## 6. Yedekleme
 
