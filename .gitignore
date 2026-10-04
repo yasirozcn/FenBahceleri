@@ -4,3 +4,6 @@ node_modules/
 .env
 .env*.local
 *.log
+.idea/
+# yerel modüllerin Android derleme çıktıları
+QrScannerApp/modules/*/android/build/

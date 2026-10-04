@@ -35,7 +35,8 @@ func log(_ s: String) {
   let f = DateFormatter(); f.dateFormat = "HH:mm:ss"
   let line = "\(f.string(from: Date())) \(s)"
   logLines.append(line)
-  if logLines.count > 8 { logLines.removeFirst(logLines.count - 8) }
+  if logLines.count > 14 { logLines.removeFirst(logLines.count - 14) }
+  print("\u{1B}[2m" + line + "\u{1B}[0m") // kaydırılan terminal geçmişinde de kalsın
 }
 var logLines: [String] = []
 
@@ -152,6 +153,52 @@ final class Beacon: NSObject, CBPeripheralManagerDelegate {
 }
 
 let beacon: Beacon? = useBle ? Beacon() : nil
+
+// ---------------------------------------------------------------- okutma logu (sunucudan)
+// Kiosk akışını 2 sn'de bir çeker; bu kioskta yapılan her okutmayı (kabul/red) ve BLE sonucunu loga yazar.
+
+let feedSince = ISO8601DateFormatter().string(from: Date())
+var seenAttempts = Set<String>()
+var feedFailing = false
+
+func pollFeed() {
+  let since = feedSince.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? feedSince
+  var req = URLRequest(url: URL(string: "\(opts["api"]!)/api/mobile/kiosks/\(kioskId)/feed?since=\(since)")!)
+  req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+  req.timeoutInterval = 5
+  URLSession.shared.dataTask(with: req) { data, _, err in
+    let json = (try? JSONSerialization.jsonObject(with: data ?? Data())) as? [String: Any]
+    DispatchQueue.main.async {
+      guard err == nil, let attempts = json?["attempts"] as? [[String: Any]] else {
+        if !feedFailing { log("Sunucuya ulaşılamıyor — okutma logu durdu (\(err?.localizedDescription ?? "geçersiz yanıt"))") }
+        feedFailing = true
+        return
+      }
+      if feedFailing { log("Sunucu bağlantısı geri geldi") }
+      feedFailing = false
+      var changed = false
+      for a in attempts.reversed() {
+        guard let id = a["id"] as? String, !seenAttempts.contains(id) else { continue }
+        seenAttempts.insert(id)
+        changed = true
+        let name = a["studentName"] as? String ?? "?"
+        let ok = (a["result"] as? String) == "ACCEPTED"
+        let ble: String
+        if let tok = a["bleToken"] as? String {
+          let rssi = (a["bleRssi"] as? NSNumber).map { "RSSI \($0)" } ?? "RSSI ?"
+          let verdict = (a["bleOk"] as? Bool).map { $0 ? "eşleşti ✓" : "EŞLEŞMEDİ ✗" } ?? "kontrol edilmedi"
+          ble = "BLE \(tok) \(rssi) \(verdict)"
+        } else {
+          ble = "BLE jetonu YOK (telefon yayını duymadı)"
+        }
+        log(ok ? "OKUTMA ✓ \(name) — \(ble)" : "OKUTMA ✗ \(name) — reddedildi: \(a["rejectReason"] as? String ?? "?") — \(ble)")
+      }
+      if changed, lastSlot >= 0 { render(lastSlot) }
+    }
+  }.resume()
+}
+let feedTimer = Timer(timeInterval: 2, repeats: true) { _ in pollFeed() }
+RunLoop.main.add(feedTimer, forMode: .common)
 var lastSlot = -1
 
 func render(_ slot: Int) {

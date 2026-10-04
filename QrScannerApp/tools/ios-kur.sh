@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# iPhone'a bağımsız (Release) sürümü derleyip kurar. Telefon kabloyla bağlı ve kilidi açık olmalı.
+# Sunucu adresi .env'deki EXPO_PUBLIC_API_URL'den alınır ve uygulamanın içine gömülür.
+# Kullanım: bash tools/ios-kur.sh            (takım varsayılanı: L678N67GGA)
+#           TEAM_ID=XXXXXXXXXX bash tools/ios-kur.sh
+set -euo pipefail
+cd "$(dirname "$0")/.."
+TEAM_ID="${TEAM_ID:-L678N67GGA}"
+API_URL=$(grep -E '^EXPO_PUBLIC_API_URL=' .env | cut -d= -f2-)
+echo "Sunucu adresi: $API_URL"
+
+DEVICE=$(xcrun devicectl list devices 2>/dev/null | awk '/physical/ && !/unavailable/ { for (i=1;i<=NF;i++) if ($i ~ /^[0-9A-F]{8}-[0-9A-F]{16}$/) print $i }' | head -1)
+[ -n "$DEVICE" ] || { echo "Bağlı iPhone bulunamadı (kablo, kilit, 'Bu bilgisayara güven' ve Geliştirici Modu'nu kontrol edin)."; exit 1; }
+echo "Cihaz: $DEVICE"
+
+NODE_OPTIONS=--use-system-ca CI=1 npx expo prebuild -p ios --clean >/dev/null
+DD="${TMPDIR:-/tmp}/fb-ios-build"
+xcodebuild -workspace ios/*.xcworkspace -scheme "$(basename ios/*.xcworkspace .xcworkspace)" -configuration Release \
+  -destination "id=$DEVICE" -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
+  DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic -derivedDataPath "$DD" build -quiet
+APP=$(ls -d "$DD"/Build/Products/Release-iphoneos/*.app | head -1)
+xcrun devicectl device install app --device "$DEVICE" "$APP" >/dev/null
+rm -rf "$DD"
+echo "Kuruldu: $(basename "$APP") → iPhone ($API_URL)"

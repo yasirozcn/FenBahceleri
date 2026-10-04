@@ -45,6 +45,8 @@ Veriyi tamamen silmek için (volume dahil): `docker compose --env-file .env.loca
 
 ## Canlıya alma
 
+> **Önerilen ve hazır yol:** AWS Lightsail üzerinde tek sunucu (Docker: PostgreSQL + panel + HTTPS), ~7 $/ay — adım adım: [CANLIYA_ALMA.md](../CANLIYA_ALMA.md). Aşağıdaki bölüm, ayrı bir yönetilen PostgreSQL servisi kullanmak isterseniz geçerlidir.
+
 ### 1. Yönetilen PostgreSQL açın
 
 Veritabanını kendi sunucunuzda Docker ile çalıştırmak yerine yönetilen bir servis kullanın; yedekleme, güncelleme ve disk sorunlarını servis üstlenir. Öğrenci verisi (KVKK) nedeniyle veritabanının **Türkiye'de veya AB'de (ör. Frankfurt)** barınmasına dikkat edin.

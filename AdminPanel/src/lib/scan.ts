@@ -51,7 +51,15 @@ export async function processScan(input: ScanInput): Promise<ScanResult> {
     bleOk: null as boolean | null,
     integrityOk: null, // 2. aşama: Play Integrity / App Attest sonucu
   };
+  // Sunucu terminalinde her okutma için tek satır (BLE sonucu dahil).
+  const logScan = (outcome: string) =>
+    console.log(
+      `[scan] ${outcome} · öğrenci ${input.studentId} · kiosk ${base.kioskId ?? "?"} · BLE ${
+        base.bleToken ? `${base.bleToken} RSSI ${base.bleRssi ?? "?"} → ${base.bleOk === null ? "kontrol edilmedi" : base.bleOk ? "EŞLEŞTİ" : "EŞLEŞMEDİ"}` : "jeton yok"
+      }`,
+    );
   const reject = async (reason: RejectReason, detail?: string): Promise<ScanResult> => {
+    logScan(`REDDEDİLDİ (${reason})`);
     await insertScanAttempt({ ...base, result: "REJECTED", rejectReason: reason });
     return { ok: false, reason, message: detail ?? REJECT_MESSAGES[reason] };
   };
@@ -99,6 +107,7 @@ export async function processScan(input: ScanInput): Promise<ScanResult> {
 
   if (last && last.direction === direction && Date.now() - Date.parse(last.occurredAt) < config.duplicateWindowSeconds * 1000) {
     // Çift okutma: yeni olay ve SMS yok, mevcut olay döner.
+    logScan(`KABUL (tekrar okutma, ${direction})`);
     await insertScanAttempt({ ...base, result: "ACCEPTED", rejectReason: null });
     return { ok: true, duplicate: true, event: last, studentName, bleOk: base.bleOk };
   }
@@ -107,6 +116,7 @@ export async function processScan(input: ScanInput): Promise<ScanResult> {
   if (direction === "OUT" && student.presenceStatus === "OUT")
     return reject("WRONG_STATE", "Sistemde okula giriş kaydınız yok. Okul yönetimine bildirin.");
 
+  logScan(`KABUL (${direction})`);
   const attempt = await insertScanAttempt({ ...base, result: "ACCEPTED", rejectReason: null });
   // Eş zamanlı iki istek aynı QR dilimini kullandıysa veritabanı ikincisini REPLAY olarak kaydeder.
   if (attempt.result !== "ACCEPTED") return { ok: false, reason: "REPLAY", message: REJECT_MESSAGES.REPLAY };

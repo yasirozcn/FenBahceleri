@@ -46,3 +46,7 @@ next-env.d.ts
 
 # şablon dosyası git'e girer (gerçek değerler .env.local'da)
 !.env.example
+
+# canlı sunucu ayarları ve yedekleri
+/deploy/.env
+/deploy/yedek/

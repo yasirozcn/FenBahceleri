@@ -1,0 +1,59 @@
+# Canlı sunucu: PostgreSQL + AdminPanel + Caddy (otomatik HTTPS), tek makinede.
+# Kullanım (sunucuda, AdminPanel/deploy klasöründe):  docker compose up -d --build
+# Ayarlar .env dosyasından okunur (şablon: .env.example). Rehber: CANLIYA_ALMA.md (depo kökü)
+name: fenbahceleri
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fb_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?deploy/.env içinde POSTGRES_PASSWORD tanımlayın}
+      POSTGRES_DB: fenbahceleri
+      TZ: Europe/Istanbul
+    # 1 GB RAM'li sunucu için küçük ayarlar. Port dışarı AÇILMAZ: veritabanına yalnızca app konteyneri erişir.
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30", "-c", "work_mem=2MB"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fb_app -d fenbahceleri"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: ..
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://fb_app:${POSTGRES_PASSWORD}@db:5432/fenbahceleri
+      DATABASE_SSL: "false" # aynı makinedeki özel Docker ağı; dışarı çıkmaz
+      AUTH_SECRET: ${AUTH_SECRET:?deploy/.env içinde AUTH_SECRET tanımlayın}
+      COOKIE_SECURE: "true"
+      BLE_REQUIRED: ${BLE_REQUIRED:-false}
+      SMS_PROVIDER: ${SMS_PROVIDER:-mock}
+      SCHOOL_SHORT_NAME: ${SCHOOL_SHORT_NAME:-Fen Bahceleri}
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-false}
+      NODE_OPTIONS: --max-old-space-size=256
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?deploy/.env içinde DOMAIN tanımlayın}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

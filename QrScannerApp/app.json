@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.fenbahceleri.giris",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocalNetworkUsageDescription": "Okul sunucusuna yerel ağ (Wi-Fi) üzerinden bağlanmak için gerekir."
       }
     },
     "android": {

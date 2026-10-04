@@ -6,22 +6,21 @@ import { buildSeed } from "./seed";
 // bigint (time_slot) varsayılan olarak metin döner; kodda sayı bekleniyor.
 types.setTypeParser(types.builtins.INT8, (v) => Number(v));
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL tanımlı değil. .env.local dosyasına bakın (POSTGRESQL_KURULUM.md).");
-}
-
 type PgState = { pool?: Pool; ready?: Promise<void> };
 // Next.js geliştirme modunda modüller yeniden yüklenebildiği için havuzu globalde tutuyoruz.
 const g = globalThis as unknown as { __fbPg?: PgState };
 const state: PgState = g.__fbPg ?? (g.__fbPg = {});
 
-const pool =
-  state.pool ??
-  (state.pool = new Pool({
+// Havuz ilk sorguda oluşturulur: `next build` sırasında DATABASE_URL yokken modülün yüklenebilmesi için.
+function getPool(): Pool {
+  if (state.pool) return state.pool;
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL tanımlı değil. .env.local dosyasına bakın (POSTGRESQL_KURULUM.md).");
+  return (state.pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     max: Number(process.env.DATABASE_POOL_MAX ?? 10),
     ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== "false" } : undefined,
   }));
+}
 
 type Queryable = Pick<PoolClient, "query">;
 
@@ -50,7 +49,7 @@ export async function insertRow(c: Queryable, table: string, row: object): Promi
 async function seedIfEmpty(): Promise<void> {
   const enabled = process.env.SEED_SAMPLE_DATA ? process.env.SEED_SAMPLE_DATA === "true" : process.env.NODE_ENV !== "production";
   if (!enabled) return;
-  const { rows } = await pool.query("SELECT 1 FROM admin_users LIMIT 1");
+  const { rows } = await getPool().query("SELECT 1 FROM admin_users LIMIT 1");
   if (rows.length) return;
   const db = await buildSeed();
   await tx(async (c) => {
@@ -79,14 +78,14 @@ function ready(): Promise<void> {
 /** Tek sorgu; satırları camelCase döner. */
 export async function q<T = Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> {
   await ready();
-  const r = await pool.query(text, params);
+  const r = await getPool().query(text, params);
   return r.rows.map((row) => camel<T>(row));
 }
 
 /** Transaction: fn içindeki tüm sorgular ya birlikte yazılır ya hiç yazılmaz. */
 export async function tx<T>(fn: (c: PoolClient) => Promise<T>, waitReady = true): Promise<T> {
   if (waitReady) await ready();
-  const c = await pool.connect();
+  const c = await getPool().connect();
   try {
     await c.query("BEGIN");
     const result = await fn(c);

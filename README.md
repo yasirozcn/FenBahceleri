@@ -24,7 +24,7 @@ Kiosk ekranını bir cihazda (yönetici girişi), öğrenci hesabını başka bi
 
 ## Sonraki adımlar
 
-1. [PostgreSQL: yerel kurulum ve canlıya alma](./AdminPanel/POSTGRESQL_KURULUM.md)
+1. [Canlıya alma: AWS Lightsail, ~7 $/ay](./CANLIYA_ALMA.md) · [PostgreSQL yerel kurulum](./AdminPanel/POSTGRESQL_KURULUM.md)
 2. [TestFlight ile ilk testler](./QrScannerApp/TESTFLIGHT.md)
 3. BLE prototip ölçümleri → `BLE_REQUIRED=true`
 4. 2. aşama: donanım anahtarı + Play Integrity / App Attest, gerçek SMS sağlayıcısı, kalıcı barındırma

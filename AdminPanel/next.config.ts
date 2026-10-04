@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Canlı sunucu (Docker) için: yalnızca gereken dosyaları .next/standalone'a kopyalar → küçük imaj.
+  output: "standalone",
 };
 
 export default nextConfig;

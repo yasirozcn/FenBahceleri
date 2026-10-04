@@ -354,6 +354,20 @@ export function listScanAttempts(onlyRejected = true, limit = 200): Promise<Atte
   );
 }
 
+/** Bir kioskun belirli andan sonraki tüm okutma denemeleri (kabul + red); kiosk/test ekranındaki log için. */
+export function listKioskAttempts(kioskId: string, since: string, limit = 20): Promise<AttemptRow[]> {
+  return q<AttemptRow>(
+    `SELECT a.*, CASE WHEN s.id IS NULL THEN NULL ELSE s.first_name || ' ' || s.last_name END AS student_name, k.name AS kiosk_name
+     FROM scan_attempts a
+     LEFT JOIN students s ON s.id = a.student_id
+     LEFT JOIN kiosks k ON k.id = a.kiosk_id
+     WHERE a.kiosk_id = $1 AND a.created_at > $2
+     ORDER BY a.created_at DESC
+     LIMIT $3`,
+    [kioskId, since, limit],
+  );
+}
+
 export function listSms(limit = 200): Promise<(SmsMessage & { studentName: string })[]> {
   return q(
     `SELECT m.*, COALESCE(s.first_name || ' ' || s.last_name, '-') AS student_name
