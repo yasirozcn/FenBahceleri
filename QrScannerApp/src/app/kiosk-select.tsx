@@ -40,7 +40,7 @@ export default function KioskSelect() {
             style={({ pressed }) => ({ backgroundColor: pressed ? colors.brandSoft : colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 18 })}
           >
             <Text style={{ fontSize: 18, fontWeight: "700", color: colors.ink }}>{k.name}</Text>
-            <Text style={{ fontSize: 14, color: k.direction === "ENTRY" ? colors.brand : "#0369a1", marginTop: 2 }}>{k.direction === "ENTRY" ? "Giriş kiosku" : "Çıkış kiosku"}</Text>
+            <Text style={{ fontSize: 14, color: colors.brand, marginTop: 2 }}>Giriş · çıkış kiosku</Text>
           </Pressable>
         ))}
       </View>

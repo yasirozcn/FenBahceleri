@@ -12,7 +12,6 @@ import type {
   Direction,
   Guardian,
   Kiosk,
-  KioskDirection,
   ScanAttempt,
   SmsMessage,
   Student,
@@ -180,8 +179,8 @@ export async function touchKiosk(id: string): Promise<void> {
   await q("UPDATE kiosks SET last_seen_at = now() WHERE id = $1", [id]);
 }
 
-export async function createKiosk(name: string, direction: KioskDirection): Promise<Kiosk> {
-  const kiosk: Kiosk = { id: newId("kiosk"), name: name.trim(), direction, secret: randomBytes(32).toString("hex"), status: "ACTIVE", lastSeenAt: null };
+export async function createKiosk(name: string): Promise<Kiosk> {
+  const kiosk: Kiosk = { id: newId("kiosk"), name: name.trim(), secret: randomBytes(32).toString("hex"), status: "ACTIVE", lastSeenAt: null };
   await tx((c) => insertRow(c, "kiosks", kiosk));
   return kiosk;
 }

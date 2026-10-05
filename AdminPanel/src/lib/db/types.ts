@@ -4,7 +4,6 @@
 
 export type PresenceStatus = "IN" | "OUT";
 export type Direction = "IN" | "OUT";
-export type KioskDirection = "ENTRY" | "EXIT";
 
 export interface Student {
   id: string;
@@ -50,7 +49,6 @@ export interface Device {
 export interface Kiosk {
   id: string;
   name: string;
-  direction: KioskDirection;
   /** QR ve BLE jetonunu üreten gizli anahtar. */
   secret: string;
   status: "ACTIVE" | "DISABLED";
@@ -66,7 +64,8 @@ export type RejectReason =
   | "BLE_MISSING"
   | "BLE_MISMATCH"
   | "REPLAY"
-  | "WRONG_STATE";
+  | "WRONG_STATE" // eski sürüm (yönlü kiosklar); artık üretilmiyor, eski kayıtlar için duruyor
+  | "DIRECTION_REQUIRED"; // ilk okutmada yön seçilmedi — kaydedilmez, uygulama yön sorar
 
 export interface ScanAttempt {
   id: string;

@@ -53,7 +53,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS devices_one_active_per_student ON devices (stu
 CREATE TABLE IF NOT EXISTS kiosks (
   id           text PRIMARY KEY,
   name         text NOT NULL,
-  direction    text NOT NULL CHECK (direction IN ('ENTRY', 'EXIT')),
   secret       text NOT NULL,
   status       text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DISABLED')),
   last_seen_at timestamptz
@@ -144,5 +143,8 @@ CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC
 ALTER TABLE students DROP COLUMN IF EXISTS reference_photo_url;
 ALTER TABLE attendance_events DROP COLUMN IF EXISTS selfie_url;
 ALTER TABLE attendance_events DROP COLUMN IF EXISTS selfie_status;
+
+-- Kiosklar artık yönsüz (tek kiosk; giriş/çıkışı sunucu belirler).
+ALTER TABLE kiosks DROP COLUMN IF EXISTS direction;
 
 COMMIT;

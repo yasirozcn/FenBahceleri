@@ -25,6 +25,7 @@ export const REJECT_MESSAGES: Record<RejectReason, string> = {
   BLE_MISMATCH: "Kiosk Bluetooth sinyali doğrulanamadı. Kioska yaklaşıp tekrar deneyin.",
   REPLAY: "Bu kod bu cihazdan zaten okutuldu. Bir sonraki kodu bekleyin.",
   WRONG_STATE: "Durumunuz bu işleme uygun değil.",
+  DIRECTION_REQUIRED: "İlk okutmanız: giriş mi çıkış mı yaptığınızı seçin.",
 };
 
 export type ScanInput = {
@@ -34,6 +35,8 @@ export type ScanInput = {
   ble: { token: string; rssi: number | null } | null;
   timestamp: number;
   signature: string;
+  /** Yalnızca öğrencinin İLK okutmasında kullanılır (önceki kaydı yoksa). Sonrasında sunucu yönü kendisi belirler. */
+  direction?: Direction | null;
 };
 
 export type ScanResult =
@@ -77,8 +80,7 @@ export async function processScan(input: ScanInput): Promise<ScanResult> {
   base.timeSlot = qr.slot;
   const kiosk = await getKiosk(qr.kioskId);
   if (!kiosk || kiosk.status !== "ACTIVE") return reject("UNKNOWN_KIOSK");
-  const dirCode = kiosk.direction === "ENTRY" ? "E" : "X";
-  if (qr.dir !== dirCode || !safeEqual(qrSignature(kiosk.secret, kiosk.id, qr.dir, qr.slot), qr.sig)) return reject("INVALID_QR");
+  if (!safeEqual(qrSignature(kiosk.secret, kiosk.id, qr.slot), qr.sig)) return reject("INVALID_QR");
 
   // 3) Tazelik: sunucu saatine göre
   const now = currentSlot();
@@ -98,23 +100,29 @@ export async function processScan(input: ScanInput): Promise<ScanResult> {
   // 5) Tekrar oynatma (aynı cihaz + aynı kiosk + aynı dilim)
   if (await isReplay(input.deviceId, kiosk.id, qr.slot)) return reject("REPLAY");
 
-  // 6) Durum makinesi
+  // 6) Yön: kiosk yönsüzdür.
+  //    - Hiç kaydı olmayan öğrenci (ilk okutma) yönü uygulamada seçer → input.direction.
+  //    - Sonrasında yön otomatik: okuldaysa ÇIKIŞ, dışarıdaysa GİRİŞ (presenceStatus'un tersi).
+  //    - Son kayıttan sonra duplicateWindowSeconds içinde tekrar okutma yeni kayıt açmaz (çift okutma koruması).
   const student = await getStudent(input.studentId);
   if (!student || !student.isActive) return reject("DEVICE_NOT_BOUND", "Öğrenci kaydı aktif değil.");
-  const direction: Direction = kiosk.direction === "ENTRY" ? "IN" : "OUT";
   const last = await lastEventForStudent(student.id);
   const studentName = `${student.firstName} ${student.lastName}`;
 
-  if (last && last.direction === direction && Date.now() - Date.parse(last.occurredAt) < config.duplicateWindowSeconds * 1000) {
+  if (last && Date.now() - Date.parse(last.occurredAt) < config.duplicateWindowSeconds * 1000) {
     // Çift okutma: yeni olay ve SMS yok, mevcut olay döner.
-    logScan(`KABUL (tekrar okutma, ${direction})`);
+    logScan(`KABUL (tekrar okutma, ${last.direction})`);
     await insertScanAttempt({ ...base, result: "ACCEPTED", rejectReason: null });
     return { ok: true, duplicate: true, event: last, studentName, bleOk: base.bleOk };
   }
-  if (direction === "IN" && student.presenceStatus === "IN")
-    return reject("WRONG_STATE", "Sistemde zaten okulda görünüyorsunuz. Önce çıkış yapılmamış olabilir; okul yönetimine bildirin.");
-  if (direction === "OUT" && student.presenceStatus === "OUT")
-    return reject("WRONG_STATE", "Sistemde okula giriş kaydınız yok. Okul yönetimine bildirin.");
+  let direction: Direction;
+  if (last) direction = student.presenceStatus === "IN" ? "OUT" : "IN";
+  else if (input.direction) direction = input.direction;
+  else {
+    // Hile denemesi değil; kaydedilmez. Uygulama yön sorup aynı/yeni QR ile tekrar gönderir.
+    logScan("YÖN GEREKLİ (ilk okutma)");
+    return { ok: false, reason: "DIRECTION_REQUIRED", message: REJECT_MESSAGES.DIRECTION_REQUIRED };
+  }
 
   logScan(`KABUL (${direction})`);
   const attempt = await insertScanAttempt({ ...base, result: "ACCEPTED", rejectReason: null });

@@ -31,8 +31,7 @@ export async function buildSeed(): Promise<Database> {
     studentGuardians: [],
     devices: [],
     kiosks: [
-      { id: "kiosk_giris", name: "Ana Kapı Giriş", direction: "ENTRY", secret: randomBytes(32).toString("hex"), status: "ACTIVE", lastSeenAt: null },
-      { id: "kiosk_cikis", name: "Ana Kapı Çıkış", direction: "EXIT", secret: randomBytes(32).toString("hex"), status: "ACTIVE", lastSeenAt: null },
+      { id: "kiosk_ana", name: "Ana Kapı", secret: randomBytes(32).toString("hex"), status: "ACTIVE", lastSeenAt: null },
     ],
     scanAttempts: [],
     attendanceEvents: [],

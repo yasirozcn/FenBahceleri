@@ -15,7 +15,7 @@ export default async function KiosksPage() {
       <div>
         <h1 className="text-2xl font-semibold">Kiosklar</h1>
         <p className="text-sm text-slate-500">
-          Her kiosk tek yöne sabitlenir. Tablette uygulamayı açıp &quot;Yönetici girişi&quot; ile oturum açın ve bu listeden kioskunu seçin; ekranda dönen QR görünür.
+          Kiosk yönsüzdür: aynı QR hem giriş hem çıkış için okutulur. Öğrenci ilk okutmada yönü seçer; sonrasında sistem okuldaysa çıkış, dışarıdaysa giriş kaydeder. Tablette uygulamayı açıp &quot;Yönetici girişi&quot; ile oturum açın ve kioskunu seçin.
         </p>
       </div>
       <div className="card overflow-x-auto">
@@ -23,7 +23,6 @@ export default async function KiosksPage() {
           <thead>
             <tr>
               <th>Ad</th>
-              <th>Yön</th>
               <th>Durum</th>
               <th>Son sinyal</th>
               <th></th>
@@ -35,7 +34,6 @@ export default async function KiosksPage() {
               return (
                 <tr key={k.id}>
                   <td className="font-medium">{k.name}</td>
-                  <td>{k.direction === "ENTRY" ? "Giriş" : "Çıkış"}</td>
                   <td>
                     {k.status === "ACTIVE" ? <span className="badge bg-emerald-50 text-emerald-700">Aktif</span> : <span className="badge bg-slate-100 text-slate-500">Devre dışı</span>}
                   </td>
@@ -67,14 +65,7 @@ export default async function KiosksPage() {
         <form action={createKioskAction} className="flex flex-wrap items-end gap-3">
           <label className="block min-w-60 flex-1">
             <span className="mb-1 block text-xs font-medium text-slate-600">Ad</span>
-            <input name="name" required className="input" placeholder="Arka kapı giriş" />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Yön</span>
-            <select name="direction" className="input">
-              <option value="ENTRY">Giriş</option>
-              <option value="EXIT">Çıkış</option>
-            </select>
+            <input name="name" required className="input" placeholder="Ana kapı" />
           </label>
           <button className="btn btn-primary py-2">Ekle</button>
         </form>

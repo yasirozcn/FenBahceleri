@@ -34,7 +34,7 @@ npm install
 cp .env.example .env     # EXPO_PUBLIC_API_URL'yi Mac'inizin yerel IP'siyle düzenleyin
 ```
 
-**Hızlı arayüz denemesi (BLE yok):** App Store'dan Expo Go'yu kurun, `npx expo start` → terminalde `s` ile Expo Go moduna geçin → QR'ı iPhone kamerasıyla okutun. Kamera, QR okuma, giriş ve selfie çalışır; BLE devre dışı kalır (sunucuda `BLE_REQUIRED=false` iken okutmalar yine kabul edilir).
+**Hızlı arayüz denemesi (BLE yok):** App Store'dan Expo Go'yu kurun, `npx expo start` → terminalde `s` ile Expo Go moduna geçin → QR'ı iPhone kamerasıyla okutun. Kamera, QR okuma ve giriş çalışır; BLE devre dışı kalır (sunucuda `BLE_REQUIRED=false` iken okutmalar yine kabul edilir).
 
 **Tam deneme (BLE dahil) — geliştirme derlemesi:**
 

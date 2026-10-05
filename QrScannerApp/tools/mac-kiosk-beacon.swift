@@ -2,10 +2,11 @@
 // Tek iPhone ile uçtan uca test için (kiosk tableti olmadan).
 //
 // Kullanım (AdminPanel çalışırken):
-//   swift tools/mac-kiosk-beacon.swift
-//   swift tools/mac-kiosk-beacon.swift --kiosk kiosk_cikis     (verilmezse ilk giriş kiosku; yanlışsa mevcut liste yazılır)
-//   Canlı sunucu: swift tools/mac-kiosk-beacon.swift --api https://ALAN-ADI --email kapi@okul.com --password '...' 
-//   swift tools/mac-kiosk-beacon.swift --api http://localhost:3000 --email kapi@fenbahceleri.test --password Kapi12345
+//   swift tools/mac-kiosk-beacon.swift --email KIOSK_EPOSTA                 (şifre ekranda gösterilmeden sorulur)
+//   KIOSK_PASSWORD=... swift tools/mac-kiosk-beacon.swift --email KIOSK_EPOSTA   (şifre ortam değişkeninden)
+//   swift tools/mac-kiosk-beacon.swift --api https://ALAN-ADI --email KIOSK_EPOSTA   (canlı sunucu)
+//   swift tools/mac-kiosk-beacon.swift --kiosk KIOSK_ID      (verilmezse ilk aktif kiosk; yanlışsa mevcut liste yazılır)
+// Şifreyi komut satırına veya bu dosyaya YAZMAYIN (kabuk geçmişine ve git'e girer).
 //   swift tools/mac-kiosk-beacon.swift --no-ble        (yalnızca QR)
 //
 // Yayın biçimi: yerel ad "FB" + 16 hex jeton. (macOS/iOS "service data" yayınlayamaz; Android kiosk service data kullanır.
@@ -21,7 +22,7 @@ import Foundation
 
 // ---------------------------------------------------------------- argümanlar
 
-var opts: [String: String] = ["api": "http://localhost:3000", "email": "kapi@fenbahceleri.test", "password": "Kapi12345", "kiosk": ""]
+var opts: [String: String] = ["api": "http://localhost:3000", "email": "", "kiosk": ""]
 var useBle = true
 var argv = Array(CommandLine.arguments.dropFirst())
 while !argv.isEmpty {
@@ -31,6 +32,14 @@ while !argv.isEmpty {
     print("Bilinmeyen argüman: \(a)"); exit(2)
   }
 }
+
+if opts["password"] != nil { print("Güvenlik: şifreyi --password ile vermeyin; KIOSK_PASSWORD ortam değişkenini kullanın ya da sorulduğunda girin."); exit(2) }
+if opts["email"]!.isEmpty { print("Kiosk hesabının e-postasını verin: --email KIOSK_EPOSTA"); exit(2) }
+let kioskPassword: String = {
+  if let env = ProcessInfo.processInfo.environment["KIOSK_PASSWORD"], !env.isEmpty { return env }
+  guard let p = getpass("\(opts["email"]!) şifresi: ") else { exit(2) }
+  return String(cString: p)
+}()
 
 func log(_ s: String) {
   let f = DateFormatter(); f.dateFormat = "HH:mm:ss"
@@ -65,23 +74,22 @@ func request(_ path: String, token: String? = nil, body: [String: Any]? = nil, m
 }
 
 print("Sunucuya bağlanılıyor: \(opts["api"]!) …")
-let login = request("/api/mobile/admin/login", body: ["email": opts["email"]!, "password": opts["password"]!])
+let login = request("/api/mobile/admin/login", body: ["email": opts["email"]!, "password": kioskPassword])
 let token = login["token"] as! String
-// Kiosk seçimi: --kiosk verilmezse ilk GİRİŞ kiosku (canlıda kimlikler panelde oluşturulurken rastgele üretilir).
+// Kiosk seçimi: --kiosk verilmezse ilk aktif kiosk (canlıda kimlikler panelde oluşturulurken rastgele üretilir).
 let kiosks = (request("/api/mobile/kiosks", token: token, method: "GET")["kiosks"] as? [[String: Any]]) ?? []
 let chosen = opts["kiosk"]!.isEmpty
-  ? (kiosks.first { ($0["direction"] as? String) == "ENTRY" } ?? kiosks.first)
+  ? kiosks.first
   : kiosks.first { ($0["id"] as? String) == opts["kiosk"] }
 guard let chosen, let chosenId = chosen["id"] as? String else {
   print("Kiosk bulunamadı. Panelde kiosk ekleyin. Mevcut kiosklar (--kiosk ile seçin):")
-  for k in kiosks { print("  \(k["id"] ?? "") — \(k["name"] ?? "") (\(k["direction"] ?? ""))") }
+  for k in kiosks { print("  \(k["id"] ?? "") — \(k["name"] ?? "")") }
   exit(1)
 }
 let start = request("/api/mobile/kiosks/\(chosenId)/start", token: token)
 let kiosk = start["kiosk"] as! [String: Any]
 let kioskId = kiosk["id"] as! String
 let kioskName = kiosk["name"] as! String
-let dirCode = (kiosk["direction"] as! String) == "ENTRY" ? "E" : "X"
 let secretHex = start["secret"] as! String
 let slotSeconds = (start["slotSeconds"] as! NSNumber).doubleValue
 let offsetMs = (start["serverTime"] as! NSNumber).doubleValue - Date().timeIntervalSince1970 * 1000
@@ -99,7 +107,8 @@ func base64url(_ d: Data) -> String {
   d.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
 }
 func currentSlot() -> Int { Int(floor((Date().timeIntervalSince1970 * 1000 + offsetMs) / 1000 / slotSeconds)) }
-func qrPayload(_ slot: Int) -> String { "FB1.\(kioskId).\(dirCode).\(slot).\(base64url(mac("FB1|\(kioskId)|\(dirCode)|\(slot)").prefix(16)))" }
+// Yönsüz kiosk QR'ı: FB2.<kioskId>.<slot>.<imza> (giriş/çıkışı sunucu belirler)
+func qrPayload(_ slot: Int) -> String { "FB2.\(kioskId).\(slot).\(base64url(mac("FB2|\(kioskId)|\(slot)").prefix(16)))" }
 func bleToken(_ slot: Int) -> String { mac("BLE|\(kioskId)|\(slot)").prefix(8).map { String(format: "%02x", $0) }.joined() }
 
 // ---------------------------------------------------------------- terminalde QR
@@ -215,7 +224,7 @@ var lastSlot = -1
 func render(_ slot: Int) {
   let payload = qrPayload(slot)
   var s = "\u{1B}[H\u{1B}[2J"
-  s += "\(kioskName) (\(kioskId)) — \(dirCode == "E" ? "GİRİŞ" : "ÇIKIŞ") kiosku · sunucu \(opts["api"]!)\n\n"
+  s += "\(kioskName) (\(kioskId)) — giriş/çıkış kiosku · sunucu \(opts["api"]!)\n\n"
   s += qrLines(payload).joined(separator: "\n") + "\n\n"
   s += "Dilim \(slot) · QR \(payload)\n"
   s += useBle ? "BLE: \(beacon!.state) · yerel ad FB\(bleToken(slot))\n" : "BLE: kapalı (--no-ble)\n"

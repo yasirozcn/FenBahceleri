@@ -116,7 +116,7 @@ Aynı komut aynı e-postayla tekrar çalıştırılırsa şifre güncellenir (ş
 Betik doğrudan veritabanına (`admin_users` tablosu) yazar; tek farkı şifreyi panelin beklediği bcrypt özetine çevirmesidir. SQL ile eklemek isterseniz önce özeti üretmeniz gerekir (bkz. 5b).
 
 Ardından panelde (`https://ALAN-ADI/login`):
-1. **Kiosklar** → "Ana Kapı Giriş" (Giriş) ve "Ana Kapı Çıkış" (Çıkış) ekleyin.
+1. **Kiosklar** → "Ana Kapı" ekleyin. Kiosk yönsüzdür: aynı QR hem giriş hem çıkış için okutulur (öğrenci ilk okutmada yönü seçer, sonra sistem sırayla giriş/çıkış kaydeder). Eski kurulumda ayrı "Giriş/Çıkış" kioskları varsa birini **Devre dışı bırak**ın.
 2. **Öğrenciler** → öğrencileri e-posta ve veli telefonuyla ekleyin.
 
 ## 5b. Veritabanına erişim

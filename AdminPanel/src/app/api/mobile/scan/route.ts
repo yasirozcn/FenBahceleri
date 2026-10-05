@@ -8,6 +8,8 @@ const schema = z.object({
   ble: z.object({ token: z.string().regex(/^[0-9a-f]{16}$/), rssi: z.number().nullable() }).nullable(),
   timestamp: z.number().int(),
   signature: z.string().regex(/^[0-9a-f]{64}$/),
+  // Yalnızca ilk okutmada (öğrencinin hiç kaydı yokken) dikkate alınır.
+  direction: z.enum(["IN", "OUT"]).nullable().optional(),
 });
 
 // Öğrenci kioskun QR kodunu okuttuğunda çağrılır.

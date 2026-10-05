@@ -71,7 +71,7 @@ export default function KioskScreen() {
 
   const payload = useMemo(() => {
     if (!start) return null;
-    return buildQrPayload(start.secret, start.kiosk.id, start.kiosk.direction === "ENTRY" ? "E" : "X", slot);
+    return buildQrPayload(start.secret, start.kiosk.id, slot);
   }, [start, slot]);
 
   // 3) BLE yayını: her dilimde jetonu yenile (yalnızca Android + geliştirme/mağaza derlemesi)
@@ -166,7 +166,6 @@ export default function KioskScreen() {
 
   const landscape = width > height;
   const qrSize = Math.min(landscape ? height * 0.62 : width * 0.78, 520);
-  const isEntry = start.kiosk.direction === "ENTRY";
   const bleText: Record<BleState, string> = {
     off: Platform.OS === "android" ? "Bluetooth kapalı veya yayın kullanılamıyor" : "BLE yayını yok",
     starting: "BLE başlatılıyor",
@@ -180,8 +179,8 @@ export default function KioskScreen() {
       <View style={{ flex: 1, flexDirection: landscape ? "row" : "column", alignItems: "center", justifyContent: "center", gap: 28 }}>
         <View style={{ alignItems: landscape ? "flex-start" : "center", maxWidth: landscape ? width * 0.35 : undefined }}>
           <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: 1.5, color: colors.brand, textTransform: "uppercase" }}>Fen Bahçeleri</Text>
-          <Text style={{ fontSize: 36, fontWeight: "800", color: colors.ink, marginTop: 4 }}>{isEntry ? "GİRİŞ" : "ÇIKIŞ"}</Text>
-          <Text style={{ fontSize: 18, color: colors.muted, marginTop: 4, textAlign: landscape ? "left" : "center" }}>Okul uygulamasını açıp bu kodu okutun</Text>
+          <Text style={{ fontSize: 36, fontWeight: "800", color: colors.ink, marginTop: 4 }}>GİRİŞ · ÇIKIŞ</Text>
+          <Text style={{ fontSize: 18, color: colors.muted, marginTop: 4, textAlign: landscape ? "left" : "center" }}>Okul uygulamasını açıp bu kodu okutun. Giriş mi çıkış mı olduğunu sistem bilir.</Text>
           <Text style={{ fontSize: 14, color: colors.muted, marginTop: 12 }}>{start.kiosk.name}</Text>
         </View>
 

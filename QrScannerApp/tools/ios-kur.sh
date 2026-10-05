@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # iPhone'a bağımsız (Release) sürümü derleyip kurar. Telefon kabloyla bağlı ve kilidi açık olmalı.
 # Sunucu adresi .env'deki EXPO_PUBLIC_API_URL'den alınır ve uygulamanın içine gömülür.
-# Kullanım: bash tools/ios-kur.sh            (takım varsayılanı: L678N67GGA)
-#           TEAM_ID=XXXXXXXXXX bash tools/ios-kur.sh
+# Kullanım: TEAM_ID=XXXXXXXXXX bash tools/ios-kur.sh
+#   TEAM_ID: Apple geliştirici takım kimliği (developer.apple.com → Membership details → Team ID).
+#   Kalıcı yapmak için .env dosyasına IOS_TEAM_ID=XXXXXXXXXX ekleyin (git'e girmez).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-TEAM_ID="${TEAM_ID:-L678N67GGA}"
+TEAM_ID="${TEAM_ID:-$(grep -E '^IOS_TEAM_ID=' .env 2>/dev/null | cut -d= -f2-)}"
+[ -n "$TEAM_ID" ] || { echo "TEAM_ID gerekli: TEAM_ID=XXXXXXXXXX bash tools/ios-kur.sh  (veya .env içine IOS_TEAM_ID=...)"; exit 1; }
 API_URL=$(grep -E '^EXPO_PUBLIC_API_URL=' .env | cut -d= -f2-)
 echo "Sunucu adresi: $API_URL"
 

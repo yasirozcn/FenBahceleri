@@ -115,7 +115,7 @@ Android telefonlu öğrenciler için aynı APK kullanılabilir; kalıcı dağıt
 - [ ] Panelde (https://.../login) yönetici hesabıyla giriş → Öğrenciler → öğrencinin e-postası listede
 - [ ] iPhone'da uygulama → Öğrenci girişi → e-posta → şifre oluştur
 - [ ] Aynı iPhone'da başka öğrenci e-postası denenince "Bu telefon başka bir öğrenci hesabına bağlı" uyarısı
-- [ ] Tablette kiosk ekranı açık → iPhone'dan **Giriş için QR okut** → "Giriş kaydedildi"
+- [ ] Tablette kiosk ekranı açık → iPhone'dan **QR okut** → ilk okutmada yön seç → "Giriş kaydedildi"; ikinci okutmada otomatik "Çıkış kaydedildi"
 - [ ] Kiosk ekranında öğrencinin adı 4 sn görünüyor
 - [ ] Panel → Canlı durum: öğrenci "Okulda"; Giriş-çıkışlar: kayıt görünüyor
 - [ ] Panel → SMS kayıtları: veli mesajı (test modunda gerçekten gitmez)

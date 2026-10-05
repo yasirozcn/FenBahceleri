@@ -4,8 +4,8 @@ import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, hexToBytes, utf8ToBytes } from "@noble/hashes/utils.js";
 
-export const PROTOCOL_VERSION = "FB1";
-export type DirCode = "E" | "X";
+// QR: FB2.<kioskId>.<slot>.<imza> — kiosk yönsüzdür; giriş/çıkışı sunucu belirler.
+export const PROTOCOL_VERSION = "FB2";
 
 const mac = (secretHex: string, message: string) => hmac(sha256, hexToBytes(secretHex), utf8ToBytes(message));
 
@@ -32,13 +32,13 @@ export function slotAt(nowMs: number, slotSeconds: number): number {
   return Math.floor(nowMs / 1000 / slotSeconds);
 }
 
-export function buildQrPayload(secretHex: string, kioskId: string, dir: DirCode, slot: number): string {
-  const sig = base64url(mac(secretHex, `${PROTOCOL_VERSION}|${kioskId}|${dir}|${slot}`).slice(0, 16));
-  return `${PROTOCOL_VERSION}.${kioskId}.${dir}.${slot}.${sig}`;
+export function buildQrPayload(secretHex: string, kioskId: string, slot: number): string {
+  const sig = base64url(mac(secretHex, `${PROTOCOL_VERSION}|${kioskId}|${slot}`).slice(0, 16));
+  return `${PROTOCOL_VERSION}.${kioskId}.${slot}.${sig}`;
 }
 
 export function isOurQr(payload: string): boolean {
-  return payload.startsWith(`${PROTOCOL_VERSION}.`) && payload.split(".").length === 5;
+  return payload.startsWith(`${PROTOCOL_VERSION}.`) && payload.split(".").length === 4;
 }
 
 export function bleToken(secretHex: string, kioskId: string, slot: number): string {

@@ -4,8 +4,8 @@ export const config = {
   authSecret: process.env.AUTH_SECRET ?? "dev-only-secret-change-me-dev-only-secret-change-me",
   /** true ise kioskun BLE jetonu olmadan okutma reddedilir. Prototip ölçümlerinden sonra açın. */
   bleRequired: process.env.BLE_REQUIRED === "true",
-  /** Aynı yönde bu süre içinde tekrar okutma, yeni olay oluşturmaz. */
-  duplicateWindowSeconds: 120,
+  /** Son kayıttan sonra bu süre içinde tekrar okutma yeni olay oluşturmaz (yön değişmez; çift okutma koruması). */
+  duplicateWindowSeconds: Number(process.env.DUPLICATE_WINDOW_SECONDS ?? 120),
   /** "mock": SMS'ler yalnızca kaydedilir ve konsola yazılır. İleride "netgsm", "iletimerkezi" vb. */
   smsProvider: process.env.SMS_PROVIDER ?? "mock",
   schoolShortName: process.env.SCHOOL_SHORT_NAME ?? "Fen Bahceleri",

@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Text, View } from "react-native";
 import { Button, Card, ErrorBox, Screen } from "@/components/ui";
-import { api, ApiError, type ScanResponse } from "@/lib/api";
+import { api, ApiError, type MeResponse, type ScanResponse } from "@/lib/api";
 import { bleLog, startBleScan, type BleStatus, type Found } from "@/lib/ble";
 import { colors } from "@/lib/config";
 import { getDeviceIdentity } from "@/lib/device";
@@ -30,6 +30,10 @@ export default function Scan() {
   const [hint, setHint] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResponse | null>(null);
   const [bleStatus, setBleStatus] = useState<BleStatus>("scanning");
+  // Kiosk yönsüz: ilk okutmada öğrenci yönü seçer, sonrasında sunucu otomatik belirler.
+  const [needsDirection, setNeedsDirection] = useState<boolean | null>(null);
+  const [nextDirection, setNextDirection] = useState<"IN" | "OUT" | null>(null);
+  const [chosenDirection, setChosenDirection] = useState<"IN" | "OUT" | null>(null);
   const ble = useRef<Found | null>(null);
   const busy = useRef(false);
 
@@ -51,6 +55,15 @@ export default function Scan() {
       stop?.();
     };
   }, [config, refreshConfig]);
+
+  useEffect(() => {
+    api<MeResponse>("/api/mobile/student/me", { token: studentToken })
+      .then((r) => {
+        setNeedsDirection(r.needsDirection);
+        setNextDirection(r.nextDirection);
+      })
+      .catch(() => setNeedsDirection(false)); // sunucu yine de DIRECTION_REQUIRED derse aşağıda sorulur
+  }, [studentToken]);
 
   const onScanned = async ({ data }: BarcodeScanningResult) => {
     if (busy.current || phase !== "scan") return;
@@ -76,13 +89,27 @@ export default function Scan() {
       const r = await api<ScanResponse>("/api/mobile/scan", {
         method: "POST",
         token: studentToken,
-        body: { qr: data, ble: freshBle ? { token: freshBle.token, rssi: freshBle.rssi } : null, timestamp, signature: requestSignature(deviceSecret, data, bleToken, timestamp) },
+        body: {
+          qr: data,
+          ble: freshBle ? { token: freshBle.token, rssi: freshBle.rssi } : null,
+          timestamp,
+          signature: requestSignature(deviceSecret, data, bleToken, timestamp),
+          direction: chosenDirection, // yalnızca ilk okutmada dikkate alınır
+        },
       });
       bleLog(`Sunucu okutmayı kabul etti: ${r.direction}${r.duplicate ? " (tekrar)" : ""} — BLE doğrulaması: ${r.bleVerified === null ? "jeton gönderilmedi" : r.bleVerified ? "EŞLEŞTİ ✓" : "EŞLEŞMEDİ ✗"}`);
       setResult(r);
       setPhase("done");
     } catch (e) {
       bleLog(`Sunucu okutmayı reddetti: ${e instanceof ApiError ? `${e.code} — ${e.message}` : String(e)}`);
+      if (e instanceof ApiError && e.code === "DIRECTION_REQUIRED") {
+        // İlk okutma ama yön seçilmemiş: seçim ekranını göster, sonra yeniden okutsun.
+        setNeedsDirection(true);
+        setChosenDirection(null);
+        setHint(e.message);
+        setPhase("scan");
+        return;
+      }
       setError(e instanceof ApiError ? e.message : "Okutma gönderilemedi.");
       setPhase("error");
     } finally {
@@ -120,6 +147,21 @@ export default function Scan() {
       </Screen>
     );
 
+  if (needsDirection && !chosenDirection && phase === "scan")
+    return (
+      <Screen>
+        <View style={{ flex: 1, justifyContent: "center" }}>
+          <Text style={{ fontSize: 24, fontWeight: "700", color: colors.ink }}>İlk okutmanız</Text>
+          <Text style={{ fontSize: 15, color: colors.muted, marginTop: 6, marginBottom: 24 }}>
+            Şu an okula mı giriyorsunuz, okuldan mı çıkıyorsunuz? Bunu yalnızca bir kez seçersiniz; sonraki okutmalarda sistem sırayla giriş ve çıkış kaydeder.
+          </Text>
+          <Button title="Okula giriyorum" onPress={() => setChosenDirection("IN")} style={{ minHeight: 64 }} />
+          <Button title="Okuldan çıkıyorum" variant="secondary" onPress={() => setChosenDirection("OUT")} style={{ minHeight: 64, marginTop: 12 }} />
+          <Button title="Vazgeç" variant="ghost" onPress={() => router.back()} style={{ marginTop: 8 }} />
+        </View>
+      </Screen>
+    );
+
   if (phase === "error")
     return (
       <Screen>
@@ -141,6 +183,11 @@ export default function Scan() {
   return (
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: "700", color: colors.ink }}>Kiosk QR kodunu okutun</Text>
+      {(chosenDirection ?? nextDirection) && (
+        <Text style={{ fontSize: 15, fontWeight: "600", color: (chosenDirection ?? nextDirection) === "IN" ? colors.brandDark : "#0369a1", marginTop: 2 }}>
+          Bu okutma: {(chosenDirection ?? nextDirection) === "IN" ? "GİRİŞ" : "ÇIKIŞ"}
+        </Text>
+      )}
       <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 12 }}>Kiosk ekranındaki kodu çerçevenin içine alın. Kod birkaç saniyede bir yenilenir.</Text>
       <View style={{ flex: 1, borderRadius: 16, overflow: "hidden", backgroundColor: "#000" }}>
         <CameraView style={{ flex: 1 }} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={phase === "scan" ? onScanned : undefined} />

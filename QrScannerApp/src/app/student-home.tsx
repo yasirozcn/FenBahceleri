@@ -89,7 +89,7 @@ export default function StudentHome() {
               <Text style={{ fontSize: 22, fontWeight: "700", color: inside ? colors.brandDark : colors.ink, marginTop: 2 }}>{inside ? "Okuldasınız" : "Okul dışındasınız"}</Text>
             </Card>
 
-            <Button title={inside ? "Çıkış için QR okut" : "Giriş için QR okut"} onPress={() => router.push("/scan")} style={{ minHeight: 64 }} />
+            <Button title={data.needsDirection ? "QR okut" : inside ? "Çıkış için QR okut" : "Giriş için QR okut"} onPress={() => router.push("/scan")} style={{ minHeight: 64 }} />
 
             <Text style={{ fontSize: 16, fontWeight: "700", color: colors.ink, marginTop: 28, marginBottom: 10 }}>Son hareketler</Text>
             {data.events.length === 0 && <Text style={{ color: colors.muted }}>Henüz kayıt yok.</Text>}

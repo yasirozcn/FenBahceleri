@@ -13,7 +13,7 @@ export const POST = handler(async (req: Request, ctx: { params: Promise<{ id: st
   await touchKiosk(kiosk.id);
   await addAudit({ adminUserId: claims.sub, action: "KIOSK_START", entity: "kiosk", entityId: kiosk.id, beforeValue: null, afterValue: null });
   return ok({
-    kiosk: { id: kiosk.id, name: kiosk.name, direction: kiosk.direction },
+    kiosk: { id: kiosk.id, name: kiosk.name },
     secret: kiosk.secret,
     slotSeconds: SLOT_SECONDS,
     bleServiceUuid: BLE_SERVICE_UUID,

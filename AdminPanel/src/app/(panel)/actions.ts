@@ -85,10 +85,9 @@ export async function reviewEventAction(form: FormData) {
 export async function createKioskAction(form: FormData) {
   const admin = await requireWebAdmin();
   const name = String(form.get("name") ?? "").trim();
-  const direction = form.get("direction") === "EXIT" ? "EXIT" : "ENTRY";
   if (!name) return;
-  const k = await createKiosk(name, direction);
-  await addAudit({ adminUserId: admin.id, action: "KIOSK_CREATED", entity: "kiosk", entityId: k.id, beforeValue: null, afterValue: { name, direction } });
+  const k = await createKiosk(name);
+  await addAudit({ adminUserId: admin.id, action: "KIOSK_CREATED", entity: "kiosk", entityId: k.id, beforeValue: null, afterValue: { name } });
   revalidatePath("/kiosklar");
 }
 

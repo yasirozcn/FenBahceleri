@@ -103,10 +103,8 @@ VALUES ('adm_ilk', 'Okul Yöneticisi', 'admin@okulunuz.com', 'ADMIN', '<yukarıd
 INSERT INTO admin_users (id, full_name, email, role, password_hash)
 VALUES ('adm_kiosk1', 'Ana Kapı Tableti', 'kapi@okulunuz.com', 'KIOSK', '<ayrı şifrenin özeti>');
 
--- Kiosklar (secret her kiosk için rastgele: openssl rand -hex 32)
-INSERT INTO kiosks (id, name, direction, secret) VALUES
-  ('kiosk_giris', 'Ana Kapı Giriş', 'ENTRY', '<rastgele>'),
-  ('kiosk_cikis', 'Ana Kapı Çıkış', 'EXIT',  '<rastgele>');
+-- Kiosk (yönsüz; secret rastgele: openssl rand -hex 32). Panelden "Kiosklar" sayfasıyla da eklenebilir.
+INSERT INTO kiosks (id, name, secret) VALUES ('kiosk_ana', 'Ana Kapı', '<rastgele>');
 ```
 
 Öğrenciler panelden (Öğrenciler sayfası) eklenir.

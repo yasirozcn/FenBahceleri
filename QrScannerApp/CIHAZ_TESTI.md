@@ -74,7 +74,7 @@ Bu APK geliştirme sunucusu (Metro) gerektirmez; tek başına çalışır. Kod d
 
 **Kiosk modunu açmak**
 1. Uygulama → **Yönetici girişi (kiosk)** → `kapi@fenbahceleri.test` / `Kapi12345`.
-2. **Ana Kapı Giriş**'i seçin.
+2. **Ana Kapı**'yı seçin (tek kiosk; giriş ve çıkış aynı QR ile).
 3. İzinler: **Yakındaki cihazlar → İzin ver** (BLE yayını için gerekli). Bluetooth kapalıysa uygulama açmanızı ister.
 4. Ekranda büyük QR ve altında **"BLE yayını açık"** görünmeli. Ekran kendiliğinden kapanmaz.
 
@@ -131,12 +131,12 @@ Aynısı Android kioskta da geçerlidir (kiosk kapalı Bluetooth ile yayın yapa
 4. Başka öğrenci e-postası → "Bu telefon başka bir öğrenci hesabına bağlı".
 
 ### D) QR + Bluetooth uçtan uca
-1. iPhone → **QR okut** → Android'deki QR'ı okutun. Alt satırda yeşil **"Kiosk sinyali alındı"** olmalı.
+1. iPhone → **QR okut** → (yalnızca ilk okutmada) **Okula giriyorum / Okuldan çıkıyorum** seçin → Android'deki QR'ı okutun. Alt satırda yeşil **"Kiosk sinyali alındı"** olmalı.
 2. Sonuç ekranı: **"Giriş kaydedildi"** + **"Bluetooth doğrulaması: kiosk doğrulandı ✓"**
    (telefonun duyduğu jeton sunucuda kioskun gizli anahtarıyla eşleşti).
 3. Android kiosk ekranında öğrencinin adı birkaç saniye görünür.
 4. Panel (http://localhost:3000, `admin@fenbahceleri.test` / `Admin12345`) → Canlı durum: öğrenci **Okulda**.
-5. Çıkış: Android'de geri → **Ana Kapı Çıkış** → tekrar okutun.
+5. Çıkış: aynı QR'ı tekrar okutun (yön sorulmaz; sistem otomatik **Çıkış** kaydeder). 120 sn içindeki ikinci okutma "çift okutma" sayılır, yeni kayıt açmaz (`DUPLICATE_WINDOW_SECONDS`).
 
 ### E) Hile denemeleri (isteğe bağlı)
 - QR'ın ekran görüntüsünü alıp 20 sn sonra okutun → "süresi geçmiş" reddi; Panel → **Reddedilen okutmalar**.

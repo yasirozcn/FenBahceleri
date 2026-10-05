@@ -8,6 +8,7 @@ export const GET = handler(async () =>
     bleRequired: config.bleRequired,
     bleServiceUuid: BLE_SERVICE_UUID,
     slotSeconds: SLOT_SECONDS,
+    duplicateWindowSeconds: config.duplicateWindowSeconds,
     serverTime: Date.now(),
   }),
 );

@@ -17,6 +17,9 @@ export const GET = handler(async (req: Request) => {
       className: student.className,
       presenceStatus: student.presenceStatus,
     },
+    // Hiç kaydı yoksa ilk okutmada yön sorulur; sonrasında sıradaki yön otomatiktir.
+    needsDirection: events.length === 0,
+    nextDirection: events.length === 0 ? null : student.presenceStatus === "IN" ? "OUT" : "IN",
     events: events.map((e) => ({ id: e.id, direction: e.direction, occurredAt: e.occurredAt, kioskName: e.kioskName })),
   });
 });

@@ -42,10 +42,14 @@ export type StudentSummary = { id: string; firstName: string; lastName: string; 
 export type AuthResponse = { token: string; student: StudentSummary };
 export type MeResponse = {
   student: StudentSummary & { presenceStatus: "IN" | "OUT" };
+  /** Hiç kaydı yoksa true: ilk okutmada giriş/çıkış seçilir. */
+  needsDirection: boolean;
+  /** Sıradaki okutmanın yönü (sunucu belirler); ilk okutmadan önce null. */
+  nextDirection: "IN" | "OUT" | null;
   events: { id: string; direction: "IN" | "OUT"; occurredAt: string; kioskName: string | null }[];
 };
 export type ScanResponse = { eventId: string; direction: "IN" | "OUT"; occurredAt: string; time: string; duplicate: boolean; studentName: string; bleVerified: boolean | null };
-export type AppConfig = { bleRequired: boolean; bleServiceUuid: string; slotSeconds: number; serverTime: number };
-export type KioskInfo = { id: string; name: string; direction: "ENTRY" | "EXIT" };
+export type AppConfig = { bleRequired: boolean; bleServiceUuid: string; slotSeconds: number; duplicateWindowSeconds: number; serverTime: number };
+export type KioskInfo = { id: string; name: string };
 export type KioskStart = { kiosk: KioskInfo; secret: string; slotSeconds: number; bleServiceUuid: string; bleRequired: boolean; serverTime: number };
 export type KioskFeed = { serverTime: number; events: { id: string; name: string; className: string; direction: "IN" | "OUT"; occurredAt: string; time: string }[] };
