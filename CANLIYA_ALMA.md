@@ -146,7 +146,7 @@ SELECT first_name, last_name, email, class_name FROM students;
 | Host / Port | `127.0.0.1` / `5432` |
 | User / Database | `fb_app` / `fenbahceleri` |
 | Password | `.env`'deki `POSTGRES_PASSWORD` |
-| SSH Server / Port | `18.196.144.201` (statik IP) / `22` |
+| SSH Server / Port | `STATIK_IP` (Lightsail statik IP) / `22` |
 | SSH User | `ubuntu` |
 | SSH Key | indirdiğiniz `.pem` dosyası |
 
