@@ -1,8 +1,10 @@
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Linking, Text, View } from "react-native";
-import { Button, Card, ErrorBox, Screen } from "@/components/ui";
+import { ActivityIndicator, Linking, Pressable, Text, View } from "react-native";
+import { IconAlert, IconArrowRight, IconBack, IconBluetooth, IconBluetoothOff, IconCamera, IconCheck, IconIn, IconInfo, IconOut, IconX } from "@/components/icons";
+import { Button, ErrorBox, mono, Screen, styles, TopBar } from "@/components/ui";
 import { api, ApiError, type MeResponse, type ScanResponse } from "@/lib/api";
 import { bleLog, startBleScan, type BleStatus, type Found } from "@/lib/ble";
 import { colors } from "@/lib/config";
@@ -121,93 +123,190 @@ export default function Scan() {
   if (!permission.granted)
     return (
       <Screen>
+        <TopBar title="QR okut" onBack={() => router.back()} />
         <View style={{ flex: 1, justifyContent: "center" }}>
-          <Text style={{ fontSize: 18, fontWeight: "600", marginBottom: 16, color: colors.ink }}>QR okutmak için kamera izni gerekiyor.</Text>
+          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: colors.brandSoft, alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+            <IconCamera size={32} color={colors.brand} />
+          </View>
+          <Text style={[styles.title, { fontSize: 26, lineHeight: 31, marginBottom: 20 }]}>QR okutmak için kamera izni gerekiyor.</Text>
           {permission.canAskAgain ? <Button title="Kamera izni ver" onPress={requestPermission} /> : <Button title="Ayarları aç" onPress={() => Linking.openSettings()} />}
           <Button title="Geri" variant="ghost" onPress={() => router.back()} style={{ marginTop: 8 }} />
         </View>
       </Screen>
     );
 
-  if (phase === "done" && result)
+  if (phase === "done" && result) {
+    const isIn = result.direction === "IN";
     return (
-      <Screen>
-        <View style={{ flex: 1, justifyContent: "center" }}>
-          <Card style={{ alignItems: "center", paddingVertical: 32, backgroundColor: colors.brandSoft, borderColor: "#d5ebdd" }}>
-            <Text style={{ fontSize: 48, color: colors.brand }}>✓</Text>
-            <Text style={{ fontSize: 24, fontWeight: "700", color: colors.brandDark, marginTop: 8 }}>{result.direction === "IN" ? "Giriş kaydedildi" : "Çıkış kaydedildi"}</Text>
-            <Text style={{ fontSize: 18, color: colors.ink, marginTop: 6 }}>Saat {result.time}</Text>
-            <Text style={{ fontSize: 13, color: colors.muted, marginTop: 8 }}>
+      <Screen style={{ backgroundColor: isIn ? colors.brand : colors.exit }}>
+        <StatusBar style="light" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: colors.white, alignItems: "center", justifyContent: "center" }}>
+            <IconCheck size={64} color={isIn ? colors.brand : colors.exit} strokeWidth={3} />
+          </View>
+          <Text style={{ fontSize: 34, lineHeight: 38, fontWeight: "800", letterSpacing: -0.4, color: colors.white, marginTop: 24, textAlign: "center" }}>{isIn ? "Giriş kaydedildi" : "Çıkış kaydedildi"}</Text>
+          <Text style={{ fontSize: 44, fontWeight: "600", fontFamily: mono, color: colors.white, marginTop: 6 }}>{result.time}</Text>
+          <Text style={{ fontSize: 15, color: "rgba(255,255,255,0.8)" }}>Saat</Text>
+        </View>
+        <View style={{ backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 18, padding: 16, gap: 10, marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <IconBluetooth size={20} color={colors.white} />
+            <Text style={{ flex: 1, fontSize: 15, color: colors.white }}>
               Bluetooth doğrulaması: {result.bleVerified === null ? "sinyal yok" : result.bleVerified ? "kiosk doğrulandı ✓" : "jeton eşleşmedi ✗"}
             </Text>
-            {result.duplicate && <Text style={{ fontSize: 13, color: colors.muted, marginTop: 8, textAlign: "center" }}>Bu işlem az önce zaten kaydedilmişti; velinize tekrar SMS gönderilmedi.</Text>}
-          </Card>
-          <Button title="Tamam" onPress={() => router.back()} style={{ marginTop: 20 }} />
+          </View>
+          {result.duplicate && (
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+              <IconInfo size={20} color={colors.white} />
+              <Text style={{ flex: 1, fontSize: 14, lineHeight: 20, color: colors.white }}>Bu işlem az önce zaten kaydedilmişti; velinize tekrar SMS gönderilmedi.</Text>
+            </View>
+          )}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          style={({ pressed }) => ({ minHeight: 60, borderRadius: 16, backgroundColor: colors.white, opacity: pressed ? 0.85 : 1, alignItems: "center", justifyContent: "center" })}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "700", color: isIn ? colors.brandDark : colors.exitInk }}>Tamam</Text>
+        </Pressable>
       </Screen>
     );
+  }
 
   if (needsDirection && !chosenDirection && phase === "scan")
     return (
       <Screen>
-        <View style={{ flex: 1, justifyContent: "center" }}>
-          <Text style={{ fontSize: 24, fontWeight: "700", color: colors.ink }}>İlk okutmanız</Text>
-          <Text style={{ fontSize: 15, color: colors.muted, marginTop: 6, marginBottom: 24 }}>
-            Şu an okula mı giriyorsunuz, okuldan mı çıkıyorsunuz? Bunu yalnızca bir kez seçersiniz; sonraki okutmalarda sistem sırayla giriş ve çıkış kaydeder.
-          </Text>
-          <Button title="Okula giriyorum" onPress={() => setChosenDirection("IN")} style={{ minHeight: 64 }} />
-          <Button title="Okuldan çıkıyorum" variant="secondary" onPress={() => setChosenDirection("OUT")} style={{ minHeight: 64, marginTop: 12 }} />
-          <Button title="Vazgeç" variant="ghost" onPress={() => router.back()} style={{ marginTop: 8 }} />
-        </View>
+        <TopBar title="İlk okutma" onBack={() => router.back()} />
+        <Text style={[styles.title, { fontSize: 30 }]}>İlk okutmanız</Text>
+        <Text style={[styles.sub, { marginBottom: 24 }]}>
+          Şu an okula mı giriyorsunuz, okuldan mı çıkıyorsunuz? Bunu yalnızca bir kez seçersiniz; sonraki okutmalarda sistem sırayla giriş ve çıkış kaydeder.
+        </Text>
+        <DirectionCard title="Okula giriyorum" tone="in" onPress={() => setChosenDirection("IN")} />
+        <DirectionCard title="Okuldan çıkıyorum" tone="out" onPress={() => setChosenDirection("OUT")} />
+        <View style={{ flex: 1 }} />
+        <Button title="Vazgeç" variant="ghost" onPress={() => router.back()} />
       </Screen>
     );
 
   if (phase === "error")
     return (
       <Screen>
+        <TopBar title="QR okut" onBack={() => router.back()} />
         <View style={{ flex: 1, justifyContent: "center" }}>
-          <Text style={{ fontSize: 22, fontWeight: "700", color: colors.ink, marginBottom: 12 }}>Okutma kabul edilmedi</Text>
+          <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: colors.dangerSoft, alignItems: "center", justifyContent: "center", marginBottom: 22 }}>
+            <IconX size={44} color={colors.danger} />
+          </View>
+          <Text style={[styles.title, { marginBottom: 16 }]}>Okutma kabul edilmedi</Text>
           <ErrorBox message={error} />
-          <Button
-            title="Tekrar dene"
-            onPress={() => {
-              setError(null);
-              setPhase("scan");
-            }}
-          />
-          <Button title="Geri" variant="ghost" onPress={() => router.back()} style={{ marginTop: 8 }} />
         </View>
+        <Button
+          title="Tekrar dene"
+          onPress={() => {
+            setError(null);
+            setPhase("scan");
+          }}
+          style={{ minHeight: 60, borderRadius: 16 }}
+        />
+        <Button title="Geri" variant="ghost" onPress={() => router.back()} style={{ marginTop: 8 }} />
       </Screen>
     );
 
+  const dir = chosenDirection ?? nextDirection;
+  const bleDot = bleStatus === "found" ? colors.brand : bleStatus === "scanning" ? colors.warn : colors.muted;
   return (
-    <Screen>
-      <Text style={{ fontSize: 22, fontWeight: "700", color: colors.ink }}>Kiosk QR kodunu okutun</Text>
-      {(chosenDirection ?? nextDirection) && (
-        <Text style={{ fontSize: 15, fontWeight: "600", color: (chosenDirection ?? nextDirection) === "IN" ? colors.brandDark : "#0369a1", marginTop: 2 }}>
-          Bu okutma: {(chosenDirection ?? nextDirection) === "IN" ? "GİRİŞ" : "ÇIKIŞ"}
-        </Text>
-      )}
-      <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 12 }}>Kiosk ekranındaki kodu çerçevenin içine alın. Kod birkaç saniyede bir yenilenir.</Text>
-      <View style={{ flex: 1, borderRadius: 16, overflow: "hidden", backgroundColor: "#000" }}>
+    <Screen style={{ backgroundColor: "#0B120E" }}>
+      <StatusBar style="light" />
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Geri" onPress={() => router.back()} hitSlop={8} style={{ width: 48, height: 48, marginLeft: -12, alignItems: "center", justifyContent: "center" }}>
+          <IconBack size={26} color={colors.white} />
+        </Pressable>
+        {dir && (
+          <View style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: dir === "IN" ? colors.brand : colors.exit }}>
+            <Text style={{ fontSize: 14, fontWeight: "800", letterSpacing: 0.5, color: colors.white }}>Bu okutma: {dir === "IN" ? "GİRİŞ" : "ÇIKIŞ"}</Text>
+          </View>
+        )}
+        <View style={{ width: 36 }} />
+      </View>
+      <Text style={{ fontSize: 26, lineHeight: 31, fontWeight: "800", letterSpacing: -0.3, color: colors.white }}>Kiosk QR kodunu okutun</Text>
+      <Text style={{ fontSize: 15, lineHeight: 21, color: "rgba(255,255,255,0.72)", marginTop: 6, marginBottom: 16 }}>Kiosk ekranındaki kodu çerçevenin içine alın. Kod birkaç saniyede bir yenilenir.</Text>
+      <View style={{ flex: 1, borderRadius: 24, overflow: "hidden", backgroundColor: "#000" }}>
         <CameraView style={{ flex: 1 }} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={phase === "scan" ? onScanned : undefined} />
-        <View pointerEvents="none" style={{ position: "absolute", top: "20%", left: "15%", right: "15%", aspectRatio: 1, borderWidth: 3, borderColor: "rgba(255,255,255,0.85)", borderRadius: 18 }} />
+        <View pointerEvents="none" style={{ position: "absolute", top: "18%", left: "14%", right: "14%", aspectRatio: 1 }}>
+          {(["tl", "tr", "bl", "br"] as const).map((c) => (
+            <View
+              key={c}
+              style={{
+                position: "absolute",
+                width: 44,
+                height: 44,
+                borderColor: colors.white,
+                [c[0] === "t" ? "top" : "bottom"]: 0,
+                [c[1] === "l" ? "left" : "right"]: 0,
+                [c[0] === "t" ? "borderTopWidth" : "borderBottomWidth"]: 5,
+                [c[1] === "l" ? "borderLeftWidth" : "borderRightWidth"]: 5,
+                [`border${c[0] === "t" ? "Top" : "Bottom"}${c[1] === "l" ? "Left" : "Right"}Radius`]: 18,
+              }}
+            />
+          ))}
+        </View>
         {phase === "sending" && (
-          <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" }}>
+          <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(11,18,14,0.65)", alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator color="#fff" size="large" />
-            <Text style={{ color: "#fff", marginTop: 12, fontSize: 16 }}>Doğrulanıyor…</Text>
+            <Text style={{ color: "#fff", marginTop: 12, fontSize: 17, fontWeight: "600" }}>Doğrulanıyor…</Text>
           </View>
         )}
       </View>
-      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12 }}>
-        <View style={{ width: 10, height: 10, borderRadius: 5, marginRight: 8, backgroundColor: bleStatus === "found" ? colors.brand : bleStatus === "scanning" ? "#f59e0b" : "#94a3b8" }} />
-        <Text style={{ fontSize: 13, color: colors.muted }}>{bleLabel[bleStatus]}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 14, padding: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.08)" }}>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
+          {bleStatus === "off" || bleStatus === "no-permission" || bleStatus === "unavailable" ? <IconBluetoothOff size={20} color={colors.white} /> : <IconBluetooth size={20} color={colors.white} />}
+        </View>
+        <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: colors.white }}>{bleLabel[bleStatus]}</Text>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: bleDot }} />
       </View>
-      {hint && <Text style={{ marginTop: 8, fontSize: 14, color: colors.warn }}>{hint}</Text>}
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-        <Button title="Bluetooth testi" variant="secondary" onPress={() => router.push("/ble-debug")} style={{ flex: 1 }} />
-        <Button title="Vazgeç" variant="ghost" onPress={() => router.back()} style={{ flex: 1 }} />
+      {hint && (
+        <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", marginTop: 10, padding: 12, borderRadius: 14, backgroundColor: colors.warnSoft }}>
+          <IconAlert size={20} color={colors.warn} />
+          <Text style={{ flex: 1, fontSize: 14, lineHeight: 20, fontWeight: "600", color: colors.warnInk }}>{hint}</Text>
+        </View>
+      )}
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+        <Pressable accessibilityRole="button" onPress={() => router.push("/ble-debug")} style={({ pressed }) => ({ flex: 1, minHeight: 52, borderRadius: 14, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.35)", alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: colors.white }}>Bluetooth testi</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => ({ flex: 1, minHeight: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1 })}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: "rgba(255,255,255,0.8)" }}>Vazgeç</Text>
+        </Pressable>
       </View>
     </Screen>
+  );
+}
+
+// İlk okutmadaki yön seçim kartı (yalnızca görünüm).
+function DirectionCard({ title, tone, onPress }: { title: string; tone: "in" | "out"; onPress: () => void }) {
+  const isIn = tone === "in";
+  const main = isIn ? colors.brand : colors.exit;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 16,
+        padding: 20,
+        minHeight: 96,
+        marginBottom: 14,
+        borderRadius: 22,
+        borderWidth: 2,
+        borderColor: pressed ? main : colors.line,
+        backgroundColor: pressed ? (isIn ? colors.brandSoft : colors.exitSoft) : colors.white,
+      })}
+    >
+      <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: main, alignItems: "center", justifyContent: "center" }}>
+        {isIn ? <IconIn size={30} color={colors.white} /> : <IconOut size={30} color={colors.white} />}
+      </View>
+      <Text style={{ flex: 1, fontSize: 21, fontWeight: "800", color: colors.ink }}>{title}</Text>
+      <IconArrowRight size={22} color={main} />
+    </Pressable>
   );
 }

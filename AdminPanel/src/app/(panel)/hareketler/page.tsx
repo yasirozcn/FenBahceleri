@@ -25,21 +25,21 @@ export default async function EventsPage({ searchParams }: PageProps<"/hareketle
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">Giriş-çıkışlar</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="page-title">Giriş-çıkışlar</h1>
+        <p className="page-sub">
           Tüm giriş-çıkış kayıtları. Şüphelendiğiniz kaydı işaretleyebilirsiniz. &quot;Dikkat gerekenler&quot; manuel ve şüpheli kayıtları gösterir.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {filters.map((x) => (
-          <Link key={x.key} href={x.key ? `/hareketler?f=${x.key}` : "/hareketler"} className={`btn ${f === x.key ? "btn-primary" : "btn-secondary"}`}>
+          <Link key={x.key} href={x.key ? `/hareketler?f=${x.key}` : "/hareketler"} className={`btn rounded-full ${f === x.key ? "btn-primary" : "btn-secondary"}`}>
             {x.label}
           </Link>
         ))}
       </div>
 
-      <div className="card overflow-x-auto">
+      <div className="card overflow-x-auto rounded-[18px]">
         <table className="table">
           <thead>
             <tr>
@@ -53,18 +53,18 @@ export default async function EventsPage({ searchParams }: PageProps<"/hareketle
           <tbody>
             {events.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-slate-400">
+                <td colSpan={5} className="py-10 text-center text-slate-400">
                   Kayıt yok.
                 </td>
               </tr>
             )}
             {events.map((e) => (
-              <tr key={e.id} className={e.reviewStatus === "SUSPICIOUS" ? "bg-red-50/50" : undefined}>
+              <tr key={e.id} className={e.reviewStatus === "SUSPICIOUS" ? "bg-red-50/60" : undefined}>
                 <td>
-                  <div className="font-medium">
+                  <div className="font-bold whitespace-nowrap">
                     {e.student.firstName} {e.student.lastName}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[13px] whitespace-nowrap text-slate-500">
                     {e.student.className} · No {e.student.schoolNo}
                   </div>
                   {e.note && <div className="mt-1 text-xs text-violet-700">Not: {e.note}</div>}
@@ -73,7 +73,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/hareketle
                   <DirectionBadge direction={e.direction} /> <SourceBadge source={e.source} />
                   <div className="mt-1 text-xs text-slate-500">{e.kioskName ?? ""}</div>
                 </td>
-                <td className="tabular-nums">{formatDateTime(e.occurredAt)}</td>
+                <td className="font-mono text-sm tabular-nums">{formatDateTime(e.occurredAt)}</td>
                 <td>
                   <ReviewBadge status={e.reviewStatus} />
                 </td>

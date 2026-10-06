@@ -1,7 +1,8 @@
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, Text, View } from "react-native";
-import { Button, Card, ErrorBox, Screen } from "@/components/ui";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { IconIn, IconLogout, IconOut, IconQr } from "@/components/icons";
+import { Card, ErrorBox, mono, Pill, Screen } from "@/components/ui";
 import { api, ApiError, type MeResponse } from "@/lib/api";
 import { colors } from "@/lib/config";
 import { clearBinding } from "@/lib/device";
@@ -62,9 +63,10 @@ export default function StudentHome() {
   return (
     <Screen padded={false}>
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 }}
         refreshControl={
           <RefreshControl
+            tintColor={colors.brand}
             refreshing={refreshing}
             onRefresh={async () => {
               setRefreshing(true);
@@ -78,35 +80,71 @@ export default function StudentHome() {
         <ErrorBox message={error} />
         {data && (
           <>
-            <Text style={{ fontSize: 14, color: colors.muted }}>Merhaba</Text>
-            <Text style={{ fontSize: 28, fontWeight: "700", color: colors.ink }}>
-              {data.student.firstName} {data.student.lastName}
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.muted, marginBottom: 20 }}>{data.student.className}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, color: colors.inkSoft }}>Merhaba</Text>
+                <Text style={{ fontSize: 26, fontWeight: "800", letterSpacing: -0.3, color: colors.ink }}>
+                  {data.student.firstName} {data.student.lastName}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={logout}
+                style={({ pressed }) => ({ height: 44, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.line, backgroundColor: pressed ? colors.lineSoft : colors.white, flexDirection: "row", alignItems: "center", gap: 6 })}
+              >
+                <IconLogout size={18} color={colors.inkSoft} />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.inkSoft }}>Çıkış yap</Text>
+              </Pressable>
+            </View>
 
-            <Card style={{ backgroundColor: inside ? colors.brandSoft : colors.white, borderColor: inside ? "#d5ebdd" : colors.line, marginBottom: 20 }}>
-              <Text style={{ fontSize: 13, color: colors.muted }}>Şu anki durum</Text>
-              <Text style={{ fontSize: 22, fontWeight: "700", color: inside ? colors.brandDark : colors.ink, marginTop: 2 }}>{inside ? "Okuldasınız" : "Okul dışındasınız"}</Text>
+            <Card style={{ borderRadius: 22, backgroundColor: inside ? colors.brandSoft : colors.white, borderColor: inside ? colors.brandSoft : colors.line, marginBottom: 22, gap: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Pill label={inside ? "Okulda" : "Dışarıda"} tone={inside ? "brand" : "neutral"} />
+                <Text style={{ fontSize: 13, color: colors.inkSoft }}>{data.student.className}</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 13, color: colors.inkSoft }}>Şu anki durum</Text>
+                <Text style={{ fontSize: 28, lineHeight: 32, fontWeight: "800", letterSpacing: -0.3, color: inside ? colors.brandDark : colors.ink, marginTop: 2 }}>{inside ? "Okuldasınız" : "Okul dışındasınız"}</Text>
+              </View>
             </Card>
 
-            <Button title={data.needsDirection ? "QR okut" : inside ? "Çıkış için QR okut" : "Giriş için QR okut"} onPress={() => router.push("/scan")} style={{ minHeight: 64 }} />
-
-            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.ink, marginTop: 28, marginBottom: 10 }}>Son hareketler</Text>
-            {data.events.length === 0 && <Text style={{ color: colors.muted }}>Henüz kayıt yok.</Text>}
-            {data.events.map((e) => (
-              <View key={e.id} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line }}>
-                <View>
-                  <Text style={{ fontSize: 15, fontWeight: "600", color: e.direction === "IN" ? colors.brandDark : "#0369a1" }}>{e.direction === "IN" ? "Giriş" : "Çıkış"}</Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>{e.kioskName ?? "Manuel kayıt"}</Text>
-                </View>
-                <Text style={{ fontSize: 14, color: colors.ink }}>{fmt(e.occurredAt)}</Text>
-              </View>
-            ))}
-
-            <Button title="Çıkış yap" variant="ghost" onPress={logout} style={{ marginTop: 24 }} />
+            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.ink, marginBottom: 8 }}>Son hareketler</Text>
+            <View style={{ backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 4, marginBottom: 22 }}>
+              {data.events.length === 0 && <Text style={{ color: colors.inkSoft, paddingVertical: 14 }}>Henüz kayıt yok.</Text>}
+              {data.events.map((e, i) => {
+                const isIn = e.direction === "IN";
+                return (
+                  <View key={e.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: i === data.events.length - 1 ? 0 : 1, borderBottomColor: colors.lineSoft }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isIn ? colors.brandSoft : colors.exitSoft, alignItems: "center", justifyContent: "center" }}>
+                      {isIn ? <IconIn size={20} color={colors.brand} /> : <IconOut size={20} color={colors.exit} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}>{isIn ? "Giriş" : "Çıkış"}</Text>
+                      <Text style={{ fontSize: 13, color: colors.inkSoft }}>{e.kioskName ?? "Manuel kayıt"}</Text>
+                    </View>
+                    <Text style={{ fontSize: 15, fontWeight: "600", fontFamily: mono, color: colors.ink }}>{fmt(e.occurredAt)}</Text>
+                  </View>
+                );
+              })}
+            </View>
           </>
         )}
       </ScrollView>
+      {data && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/scan")}
+            style={({ pressed }) => ({ height: 72, borderRadius: 20, backgroundColor: pressed ? colors.brandDark : colors.brand, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 })}
+          >
+            <IconQr size={28} color={colors.white} />
+            <View>
+              <Text style={{ fontSize: 19, fontWeight: "700", color: colors.white }}>{data.needsDirection ? "QR okut" : inside ? "Çıkış için QR okut" : "Giriş için QR okut"}</Text>
+              <Text style={{ fontSize: 13, color: "#CFE4D6" }}>Kapıdaki ekrana yaklaşın</Text>
+            </View>
+          </Pressable>
+        </View>
+      )}
     </Screen>
   );
 }

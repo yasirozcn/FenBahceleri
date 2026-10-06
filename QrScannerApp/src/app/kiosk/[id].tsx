@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, PermissionsAndroid, Platform, Pressable, Text, useWindowDimensions, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { KioskBeacon } from "@modules/kiosk-beacon";
-import { Button, ErrorBox, Screen } from "@/components/ui";
+import { IconBluetooth, IconBluetoothOff, IconCheck } from "@/components/icons";
+import { Button, ErrorBox, mono, Screen } from "@/components/ui";
 import { api, ApiError, type KioskFeed, type KioskStart } from "@/lib/api";
 import { bleLog } from "@/lib/ble";
 import { colors } from "@/lib/config";
@@ -148,7 +149,7 @@ export default function KioskScreen() {
   if (error)
     return (
       <Screen>
-        <View style={{ flex: 1, justifyContent: "center" }}>
+        <View style={{ flex: 1, justifyContent: "center", width: "100%", maxWidth: 520, alignSelf: "center" }}>
           <ErrorBox message={error} />
           <Button title="Geri" onPress={() => router.back()} />
         </View>
@@ -159,13 +160,13 @@ export default function KioskScreen() {
     return (
       <Screen>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={colors.brand} />
+          <ActivityIndicator color={colors.brand} size="large" />
         </View>
       </Screen>
     );
 
   const landscape = width > height;
-  const qrSize = Math.min(landscape ? height * 0.62 : width * 0.78, 520);
+  const qrSize = Math.min(landscape ? height * 0.6 : width * 0.72, 480);
   const bleText: Record<BleState, string> = {
     off: Platform.OS === "android" ? "Bluetooth kapalı veya yayın kullanılamıyor" : "BLE yayını yok",
     starting: "BLE başlatılıyor",
@@ -174,43 +175,107 @@ export default function KioskScreen() {
     error: `BLE hatası${KioskBeacon.lastError() ? `: ${KioskBeacon.lastError()}` : ""}`,
   };
 
+  const bleOk = ble === "on" || ble === "starting";
+  const bleAlert = !bleOk && Platform.OS === "android"; // iOS kiosk yayın yapamaz; bu bir hata değil
+  const initials = (last?.name ?? "")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toLocaleUpperCase("tr-TR"))
+    .join("");
+  const steps = ["Okul uygulamasını açın", "\"QR okut\"a basıp bu kodu okutun", "Adınızı ekranda görünce geçin"];
+
   return (
-    <Screen style={{ backgroundColor: "#fff" }}>
-      <View style={{ flex: 1, flexDirection: landscape ? "row" : "column", alignItems: "center", justifyContent: "center", gap: 28 }}>
-        <View style={{ alignItems: landscape ? "flex-start" : "center", maxWidth: landscape ? width * 0.35 : undefined }}>
-          <Text style={{ fontSize: 14, fontWeight: "700", letterSpacing: 1.5, color: colors.brand, textTransform: "uppercase" }}>Fen Bahçeleri</Text>
-          <Text style={{ fontSize: 36, fontWeight: "800", color: colors.ink, marginTop: 4 }}>GİRİŞ · ÇIKIŞ</Text>
-          <Text style={{ fontSize: 18, color: colors.muted, marginTop: 4, textAlign: landscape ? "left" : "center" }}>Okul uygulamasını açıp bu kodu okutun. Giriş mi çıkış mı olduğunu sistem bilir.</Text>
-          <Text style={{ fontSize: 14, color: colors.muted, marginTop: 12 }}>{start.kiosk.name}</Text>
-        </View>
-
-        <View style={{ alignItems: "center" }}>
-          <View style={{ padding: 16, backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: colors.line }}>
-            <QRCode value={payload} size={qrSize} ecl="M" quietZone={8} />
+    <Screen padded={false} style={{ backgroundColor: colors.white }}>
+      <View style={{ flex: 1, flexDirection: landscape ? "row" : "column" }}>
+        {/* Yeşil bilgi paneli */}
+        <View style={{ width: landscape ? Math.min(width * 0.375, 480) : "100%", backgroundColor: colors.brand, paddingHorizontal: landscape ? 40 : 24, paddingVertical: landscape ? 40 : 22, gap: landscape ? 24 : 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", letterSpacing: 1.8, textTransform: "uppercase", color: "#CFE4D6" }}>Fen Bahçeleri</Text>
+            <Text style={{ fontSize: 20, fontWeight: "600", fontFamily: mono, color: colors.white }}>
+              {new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(new Date(serverNow))}
+            </Text>
           </View>
-          <View style={{ width: qrSize, height: 6, backgroundColor: colors.line, borderRadius: 3, marginTop: 14, overflow: "hidden" }}>
-            <View style={{ width: `${(remaining / slotSeconds) * 100}%`, height: 6, backgroundColor: colors.brand }} />
+
+          {last ? (
+            <View style={{ backgroundColor: colors.white, borderRadius: 26, padding: 24, alignItems: "center", gap: 14 }}>
+              <View>
+                <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: last.direction === "IN" ? colors.brandSoft : colors.exitSoft, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 44, fontWeight: "700", color: last.direction === "IN" ? colors.brand : colors.exit }}>{initials}</Text>
+                </View>
+                <View style={{ position: "absolute", right: -2, bottom: 4, width: 42, height: 42, borderRadius: 21, borderWidth: 4, borderColor: colors.white, backgroundColor: last.direction === "IN" ? colors.brand : colors.exit, alignItems: "center", justifyContent: "center" }}>
+                  <IconCheck size={20} color={colors.white} />
+                </View>
+              </View>
+              <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: last.direction === "IN" ? colors.brandSoft : colors.exitSoft }}>
+                <Text style={{ fontSize: 17, fontWeight: "700", color: last.direction === "IN" ? colors.brandDark : colors.exitInk }}>{last.direction === "IN" ? "Giriş" : "Çıkış"} ✓</Text>
+              </View>
+              <Text style={{ fontSize: 34, lineHeight: 38, fontWeight: "800", color: colors.ink, textAlign: "center" }}>{last.name}</Text>
+              <Text style={{ fontSize: 19, color: colors.inkSoft }}>
+                {last.className} · <Text style={{ fontFamily: mono, fontWeight: "600", color: colors.ink }}>{last.time}</Text>
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: landscape ? 64 : 40, lineHeight: landscape ? 62 : 42, fontWeight: "800", letterSpacing: -1.5, color: colors.white }}>{landscape ? "GİRİŞ\nÇIKIŞ" : "GİRİŞ · ÇIKIŞ"}</Text>
+                <Text style={{ fontSize: 19, color: "#CFE4D6" }}>{start.kiosk.name}</Text>
+              </View>
+              {landscape && <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.2)" }} />}
+              {landscape && (
+                <View style={{ gap: 18 }}>
+                  {steps.map((t, i) => (
+                    <View key={t} style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.white, alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontSize: 18, fontWeight: "700", fontFamily: mono, color: colors.brand }}>{i + 1}</Text>
+                      </View>
+                      <Text style={{ flex: 1, fontSize: 20, fontWeight: "600", lineHeight: 26, color: colors.white }}>{t}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+
+          {landscape && <View style={{ flex: 1 }} />}
+          <Text style={{ fontSize: 15, lineHeight: 22, color: "#CFE4D6" }}>Okul uygulamasını açıp bu kodu okutun. Giriş mi çıkış mı olduğunu sistem bilir.</Text>
+        </View>
+
+        {/* QR alanı */}
+        <View style={{ flex: 1, paddingHorizontal: 32, paddingTop: 24 }}>
+          {bleAlert && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 18, backgroundColor: colors.dangerSoft }}>
+              <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" }}>
+                <IconBluetoothOff size={24} color={colors.white} />
+              </View>
+              <Text style={{ flex: 1, fontSize: 17, fontWeight: "700", color: "#5E120C" }}>{bleText[ble]}</Text>
+            </View>
+          )}
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <View style={{ padding: 22, backgroundColor: colors.white, borderRadius: 28, borderWidth: 2, borderColor: colors.lineSoft }}>
+              <QRCode value={payload} size={qrSize} ecl="M" quietZone={8} />
+            </View>
+            <View style={{ width: qrSize + 44, height: 8, backgroundColor: colors.lineSoft, borderRadius: 4, marginTop: 18, overflow: "hidden" }}>
+              <View style={{ width: `${(remaining / slotSeconds) * 100}%`, height: 8, borderRadius: 4, backgroundColor: colors.brand }} />
+            </View>
+            <Text style={{ fontSize: 16, color: colors.inkSoft, marginTop: 10 }}>Kod {Math.ceil(remaining)} sn içinde yenilenecek</Text>
           </View>
-          <Text style={{ fontSize: 12, color: colors.muted, marginTop: 6 }}>Kod {Math.ceil(remaining)} sn içinde yenilenecek</Text>
+          <View style={{ minHeight: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: colors.lineSoft, gap: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 18, flexShrink: 1, flexWrap: "wrap" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: online ? colors.brand : colors.danger }} />
+                <Text style={{ fontSize: 14, fontWeight: online ? "400" : "700", color: online ? colors.inkSoft : colors.danger }}>{online ? "Sunucu bağlantısı var" : "Sunucuya ulaşılamıyor"}</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                {bleOk ? <IconBluetooth size={18} color={colors.brand} /> : <IconBluetoothOff size={18} color={bleAlert ? colors.danger : colors.muted} />}
+                <Text style={{ fontSize: 14, fontWeight: bleAlert ? "700" : "400", color: bleAlert ? colors.danger : colors.inkSoft }}>{bleText[ble]}</Text>
+              </View>
+            </View>
+            <Pressable onLongPress={exitKiosk} delayLongPress={1500} hitSlop={16}>
+              <Text style={{ fontSize: 13, color: colors.muted }}>Çıkmak için basılı tutun</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
-
-      {last && (
-        <View style={{ position: "absolute", left: 20, right: 20, bottom: 70, backgroundColor: colors.brand, borderRadius: 16, padding: 18, alignItems: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 26, fontWeight: "800" }}>{last.name}</Text>
-          <Text style={{ color: "#d5ebdd", fontSize: 18, marginTop: 4 }}>
-            {last.className} · {last.direction === "IN" ? "Giriş" : "Çıkış"} ✓ {last.time}
-          </Text>
-        </View>
-      )}
-
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={{ fontSize: 12, color: online ? colors.muted : colors.danger }}>
-          {online ? "Sunucu bağlantısı var" : "Sunucuya ulaşılamıyor"} · {bleText[ble]}
-        </Text>
-        <Pressable onLongPress={exitKiosk} delayLongPress={1500} hitSlop={16}>
-          <Text style={{ fontSize: 12, color: "#cbd5e1" }}>Çıkmak için basılı tutun</Text>
-        </Pressable>
       </View>
     </Screen>
   );

@@ -10,13 +10,13 @@ export default async function StudentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Öğrenciler</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="page-title">Öğrenciler</h1>
+        <p className="page-sub">
           Öğrenciler uygulamada kayıt olamaz; yalnızca burada tanımlanan e-postalar giriş yapabilir. Öğrenci ilk girişte şifresini oluşturur ve hesabı o telefona bağlanır. Şifresini unutan öğrenci için <b>Şifreyi sıfırla</b>, telefon değiştiren öğrenci için <b>Cihazı sıfırla</b>.
         </p>
       </div>
 
-      <div className="card overflow-x-auto">
+      <div className="card overflow-x-auto rounded-[18px]">
         <table className="table">
           <thead>
             <tr>
@@ -32,10 +32,10 @@ export default async function StudentsPage() {
             {students.map((s) => (
               <tr key={s.id}>
                 <td>
-                  <div className="font-medium">
+                  <div className="font-bold whitespace-nowrap">
                     {s.firstName} {s.lastName}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[13px] whitespace-nowrap text-slate-500">
                     {s.className} · No {s.schoolNo}
                   </div>
                 </td>
@@ -48,7 +48,7 @@ export default async function StudentsPage() {
                   ))}
                 </td>
                 <td>
-                  {s.presenceStatus === "IN" ? <span className="badge bg-emerald-50 text-emerald-700">Okulda</span> : <span className="badge bg-slate-100 text-slate-600">Dışarıda</span>}
+                  {s.presenceStatus === "IN" ? <span className="badge bg-emerald-50 text-emerald-700"><span className="h-2 w-2 rounded-full bg-emerald-600" />Okulda</span> : <span className="badge bg-slate-100 text-slate-500"><span className="h-2 w-2 rounded-full border-2 border-slate-400" />Dışarıda</span>}
                 </td>
                 <td className="text-xs">
                   {s.activeDevice ? (
@@ -95,8 +95,8 @@ export default async function StudentsPage() {
         </table>
       </div>
 
-      <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Yeni öğrenci ekle</h2>
+      <section className="card p-5 md:p-6">
+        <h2 className="mb-4 text-lg font-bold">Yeni öğrenci ekle</h2>
         <AddStudentForm />
       </section>
     </div>

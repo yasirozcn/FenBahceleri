@@ -189,6 +189,12 @@ export async function setKioskStatus(id: string, status: Kiosk["status"]): Promi
   await q("UPDATE kiosks SET status = $2 WHERE id = $1", [id, status]);
 }
 
+/** Kiosku siler. Geçmiş hareket ve okutma kayıtları korunur (kiosk_id NULL olur, FK ON DELETE SET NULL). */
+export async function deleteKiosk(id: string): Promise<boolean> {
+  const rows = await q("DELETE FROM kiosks WHERE id = $1 RETURNING id", [id]);
+  return rows.length > 0;
+}
+
 // ---------------------------------------------------------------- okutmalar ve olaylar
 
 export async function insertScanAttempt(a: Omit<ScanAttempt, "id" | "createdAt">): Promise<ScanAttempt> {

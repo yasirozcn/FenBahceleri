@@ -1,8 +1,10 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text } from "react-native";
-import { Button, ErrorBox, Field, InfoBox, Screen, Title } from "@/components/ui";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { IconCheck } from "@/components/icons";
+import { Button, ErrorBox, Field, InfoBox, Screen, Title, TopBar } from "@/components/ui";
 import { api, ApiError, type AuthResponse } from "@/lib/api";
+import { colors } from "@/lib/config";
 import { getDeviceIdentity } from "@/lib/device";
 import { useSession } from "@/lib/session";
 
@@ -83,13 +85,15 @@ export default function StudentLogin() {
   return (
     <Screen>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
+        <TopBar title={step === "create-password" ? "İlk giriş" : "Öğrenci girişi"} onBack={back} />
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           {step === "email" && (
             <>
               <Title sub="Okulun sisteme kaydettiği e-posta adresinizi girin.">Öğrenci girişi</Title>
               <Field label="E-posta" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" textContentType="emailAddress" returnKeyType="next" onSubmitEditing={submitEmail} />
               <ErrorBox message={error} />
-              <Button title="Devam" onPress={submitEmail} loading={loading} />
+              <View style={{ flex: 1, minHeight: 24 }} />
+              <Button title="Devam" onPress={submitEmail} loading={loading} style={{ minHeight: 60, borderRadius: 16 }} />
             </>
           )}
 
@@ -99,8 +103,13 @@ export default function StudentLogin() {
               <InfoBox message="Şifrenizi kaydettiğinizde hesabınız bu telefona bağlanır. Başka bir telefondan giriş yapmak için okul yönetiminin cihazınızı sıfırlaması gerekir." />
               <Field label="Şifre (en az 8 karakter)" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" />
               <Field label="Şifre (tekrar)" value={password2} onChangeText={setPassword2} secureTextEntry autoComplete="new-password" textContentType="newPassword" onSubmitEditing={submitCreatePassword} />
+              <View style={{ gap: 10, marginBottom: 16 }}>
+                <Rule ok={password.length >= 8} label="En az 8 karakter" />
+                <Rule ok={password.length > 0 && password === password2} label="İki şifre aynı" />
+              </View>
               <ErrorBox message={error} />
-              <Button title="Şifreyi kaydet ve giriş yap" onPress={submitCreatePassword} loading={loading} />
+              <View style={{ flex: 1, minHeight: 16 }} />
+              <Button title="Şifreyi kaydet ve giriş yap" onPress={submitCreatePassword} loading={loading} style={{ minHeight: 60, borderRadius: 16 }} />
             </>
           )}
 
@@ -109,14 +118,29 @@ export default function StudentLogin() {
               <Title sub={`Merhaba ${firstName}. Şifrenizi girin.`}>Şifre</Title>
               <Field label="Şifre" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" textContentType="password" onSubmitEditing={submitPassword} />
               <ErrorBox message={error} />
-              <Button title="Giriş yap" onPress={submitPassword} loading={loading} />
-              <Text style={{ marginTop: 14, fontSize: 13, color: "#64748b", textAlign: "center" }}>Şifrenizi unuttuysanız okul yönetiminden şifre sıfırlaması isteyin.</Text>
+              <View style={{ flex: 1, minHeight: 16 }} />
+              <Button title="Giriş yap" onPress={submitPassword} loading={loading} style={{ minHeight: 60, borderRadius: 16 }} />
+              <Text style={{ marginTop: 14, fontSize: 13, lineHeight: 19, color: colors.inkSoft, textAlign: "center" }}>Şifrenizi unuttuysanız okul yönetiminden şifre sıfırlaması isteyin.</Text>
             </>
           )}
-
-          <Button title="Geri" variant="ghost" onPress={back} style={{ marginTop: 8 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
+  );
+}
+
+// Şifre kuralı göstergesi (yalnızca görsel; doğrulama yukarıdaki submit içinde yapılır).
+function Rule({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+      {ok ? (
+        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center" }}>
+          <IconCheck size={14} color={colors.white} />
+        </View>
+      ) : (
+        <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#9AA39E" }} />
+      )}
+      <Text style={{ fontSize: 15, color: ok ? colors.brandDark : colors.inkSoft }}>{label}</Text>
+    </View>
   );
 }

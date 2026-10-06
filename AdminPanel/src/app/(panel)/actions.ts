@@ -6,6 +6,8 @@ import {
   addAudit,
   createKiosk,
   createStudent,
+  deleteKiosk,
+  getKiosk,
   getStudent,
   resetStudentDevice,
   resetStudentPassword,
@@ -97,5 +99,15 @@ export async function toggleKioskAction(form: FormData) {
   const status = form.get("status") === "DISABLED" ? "DISABLED" : "ACTIVE";
   await setKioskStatus(id, status);
   await addAudit({ adminUserId: admin.id, action: "KIOSK_STATUS", entity: "kiosk", entityId: id, beforeValue: null, afterValue: { status } });
+  revalidatePath("/kiosklar");
+}
+
+/** Kiosku kalıcı siler; geçmiş kayıtlar kiosk bilgisi olmadan kalır. */
+export async function deleteKioskAction(form: FormData) {
+  const admin = await requireWebAdmin();
+  const id = String(form.get("kioskId"));
+  const kiosk = await getKiosk(id);
+  if (!kiosk || !(await deleteKiosk(id))) return;
+  await addAudit({ adminUserId: admin.id, action: "KIOSK_DELETED", entity: "kiosk", entityId: id, beforeValue: { name: kiosk.name, status: kiosk.status }, afterValue: null });
   revalidatePath("/kiosklar");
 }

@@ -59,7 +59,7 @@ Dockerfile                       Canlı imaj (standalone + şema/yönetim betikl
 ## 3. Veri katmanı kuralları
 
 - **Veritabanına yalnızca `src/lib/db/repo.ts` erişir.** Sayfalar, route'lar ve iş kuralları repo fonksiyonlarını çağırır; başka yerde SQL yazılmaz.
-- Repo fonksiyonları: `findStudentByEmail, getStudent, listStudents, createStudent, setStudentPassword, getActiveDevice, getActiveDeviceForStudent, setFirstPasswordAndBindDevice, resetStudentPassword, resetStudentDevice, findAdminByEmail, getAdmin, listKiosks, getKiosk, touchKiosk, createKiosk, setKioskStatus, insertScanAttempt, isReplay, lastEventForStudent, createEventWithSms, updateSms, getEvent, reviewEvent, listEvents, listScanAttempts, listKioskAttempts, listSms, dashboardStats, addAudit, listAudit`.
+- Repo fonksiyonları: `findStudentByEmail, getStudent, listStudents, createStudent, setStudentPassword, getActiveDevice, getActiveDeviceForStudent, setFirstPasswordAndBindDevice, resetStudentPassword, resetStudentDevice, findAdminByEmail, getAdmin, listKiosks, getKiosk, touchKiosk, createKiosk, setKioskStatus, deleteKiosk, insertScanAttempt, isReplay, lastEventForStudent, createEventWithSms, updateSms, getEvent, reviewEvent, listEvents, listScanAttempts, listKioskAttempts, listSms, dashboardStats, addAudit, listAudit`.
 - Her zaman **parametreli sorgu** (`$1, $2`); kullanıcı girdisini SQL metnine eklemeyin.
 - Birden çok tabloya yazan işlemler `tx()` içinde (transaction): `createStudent`, `setFirstPasswordAndBindDevice` (öğrenci satırı `FOR UPDATE` ile kilitlenir), `resetStudentDevice`, `createEventWithSms`.
 - Satırlar `camel()` ile camelCase'e, `Date` değerleri ISO metne çevrilir. `bigint` (time_slot) sayı olarak döner.
@@ -94,7 +94,7 @@ Her yönetici işlemi Server Action (`src/app/(panel)/actions.ts`) ile yapılır
 | `/` Canlı durum | Kartlar: okulda / dışarıda / bugünkü hareket (+incelenmemiş) / bugün reddedilen okutma; son 15 hareket; 10 sn'de bir otomatik yenilenir |
 | `/hareketler` | Tüm giriş-çıkışlar; filtre: tümü / incelenmedi / dikkat gerekenler (manuel + şüpheli) / şüpheli; "Uygun" / "Şüpheli" işaretleme |
 | `/ogrenciler` | Liste (sınıf + soyada göre, Türkçe sıralama), veli, durum, bağlı cihaz; **Şifreyi sıfırla**, **Cihazı sıfırla**, **Manuel giriş/çıkış**; yeni öğrenci formu (okul no, ad, soyad, sınıf, e-posta, veli adı, veli telefonu) |
-| `/kiosklar` | Kiosk listesi (çevrimiçi = son 60 sn'de sinyal), ekle (yalnızca ad), devre dışı bırak / etkinleştir |
+| `/kiosklar` | Kiosk listesi (çevrimiçi = son 60 sn'de sinyal), ekle (yalnızca ad), devre dışı bırak / etkinleştir, sil (geçmiş kayıtlar korunur) |
 | `/denemeler` | Reddedilen okutmalar (neden, öğrenci, kiosk, BLE bilgisi) |
 | `/sms` | Veli SMS kayıtları ve durumları |
 | `/denetim` | Denetim kaydı (yönetici işlemleri) |

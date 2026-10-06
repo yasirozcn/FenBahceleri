@@ -63,8 +63,8 @@ export default function BleDebug() {
 
   return (
     <Screen>
-      <Text style={{ fontSize: 22, fontWeight: "700", color: colors.ink }}>Bluetooth testi</Text>
-      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+      <Text style={{ fontSize: 26, fontWeight: "800", letterSpacing: -0.3, color: colors.ink }}>Bluetooth testi</Text>
+      <Text style={{ fontSize: 13, color: colors.inkSoft, marginTop: 4 }}>
         {Platform.OS} · Servis {serviceUuid ?? "…"}
       </Text>
 
@@ -87,14 +87,14 @@ export default function BleDebug() {
         <Switch value={verbose} onValueChange={setVerbose} />
       </View>
 
-      <View style={{ flex: 1, marginTop: 8, borderWidth: 1, borderColor: colors.line, borderRadius: 12, backgroundColor: colors.white }}>
+      <View style={{ flex: 1, marginTop: 8, borderWidth: 1, borderColor: colors.line, borderRadius: 18, backgroundColor: colors.white, overflow: "hidden" }}>
         {tab === "devices" ? (
           <FlatList
             data={devices}
             keyExtractor={(d) => d.id}
             ListEmptyComponent={<Text style={{ padding: 12, color: colors.muted }}>Henüz cihaz bulunamadı.</Text>}
             renderItem={({ item: d }) => (
-              <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: d.isKiosk ? colors.brandSoft : undefined }}>
+              <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: colors.lineSoft, backgroundColor: d.isKiosk ? colors.brandSoft : undefined }}>
                 <Text style={{ fontWeight: "600", color: colors.ink }}>
                   {d.isKiosk ? "★ KIOSK · " : ""}
                   {d.name ?? "(adsız)"} <Text style={{ color: colors.muted, fontWeight: "400" }}>RSSI {d.rssi ?? "?"}</Text>
@@ -132,7 +132,7 @@ export default function BleDebug() {
 function Row({ label, value, ok }: { label: string; value: string; ok: boolean }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 3 }}>
-      <View style={{ width: 9, height: 9, borderRadius: 5, marginRight: 8, backgroundColor: ok ? colors.brand : "#f59e0b" }} />
+      <View style={{ width: 9, height: 9, borderRadius: 5, marginRight: 8, backgroundColor: ok ? colors.brand : colors.warn }} />
       <Text style={{ width: 110, color: colors.muted, fontSize: 13 }}>{label}</Text>
       <Text style={{ flex: 1, color: colors.ink, fontSize: 13 }}>{value}</Text>
     </View>

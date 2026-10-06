@@ -8,10 +8,10 @@ export default async function AuditPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">Denetim kaydı</h1>
-        <p className="text-sm text-slate-500">Panelde ve kiosklarda yapılan yönetici işlemleri. Bu kayıtlar silinmez.</p>
+        <h1 className="page-title">Denetim kaydı</h1>
+        <p className="page-sub">Panelde ve kiosklarda yapılan yönetici işlemleri. Bu kayıtlar silinmez.</p>
       </div>
-      <div className="card overflow-x-auto">
+      <div className="card overflow-x-auto rounded-[18px]">
         <table className="table">
           <thead>
             <tr>
@@ -25,7 +25,7 @@ export default async function AuditPage() {
           <tbody>
             {rows.map((a) => (
               <tr key={a.id}>
-                <td className="tabular-nums">{formatDateTime(a.createdAt)}</td>
+                <td className="font-mono text-sm whitespace-nowrap tabular-nums">{formatDateTime(a.createdAt)}</td>
                 <td>{a.adminName ?? "Öğrenci uygulaması"}</td>
                 <td className="font-mono text-xs">{a.action}</td>
                 <td className="text-xs text-slate-500">
