@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import {
   addAudit,
   createKiosk,
+  createKioskAccount,
+  findAdminByEmail,
   createStudent,
   deleteKiosk,
   getKiosk,
@@ -12,6 +15,7 @@ import {
   resetStudentDevice,
   resetStudentPassword,
   reviewEvent,
+  setKioskAccountPassword,
   setKioskStatus,
 } from "@/lib/db/repo";
 import { manualEvent } from "@/lib/scan";
@@ -110,4 +114,36 @@ export async function deleteKioskAction(form: FormData) {
   if (!kiosk || !(await deleteKiosk(id))) return;
   await addAudit({ adminUserId: admin.id, action: "KIOSK_DELETED", entity: "kiosk", entityId: id, beforeValue: { name: kiosk.name, status: kiosk.status }, afterValue: null });
   revalidatePath("/kiosklar");
+}
+
+type FormState = { error?: string; ok?: boolean };
+
+const kioskAccountSchema = z.object({
+  fullName: z.string().trim().min(1, "Ad zorunlu."),
+  email: z.string().trim().toLowerCase().email("Geçerli bir e-posta girin."),
+  password: z.string().min(10, "Şifre en az 10 karakter olmalı."),
+});
+
+/** Kiosk tableti için yeni hesap açar (tablette "Yönetici girişi" ile kullanılır; panele giremez). */
+export async function createKioskAccountAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const admin = await requireWebAdmin();
+  const parsed = kioskAccountSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Lütfen alanları doğru doldurun." };
+  if (await findAdminByEmail(parsed.data.email)) return { error: "Bu e-posta zaten kayıtlı." };
+  const account = await createKioskAccount(parsed.data.fullName, parsed.data.email, await bcrypt.hash(parsed.data.password, 10));
+  await addAudit({ adminUserId: admin.id, action: "KIOSK_ACCOUNT_CREATED", entity: "admin_user", entityId: account.id, beforeValue: null, afterValue: { email: account.email } });
+  revalidatePath("/kiosklar");
+  return { ok: true };
+}
+
+/** Kiosk hesabına yeni şifre verir. Tablette açık oturum varsa sürer; bir sonraki girişte yeni şifre gerekir. */
+export async function resetKioskAccountPasswordAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const admin = await requireWebAdmin();
+  const id = String(form.get("accountId"));
+  const password = String(form.get("password") ?? "");
+  if (password.length < 10) return { error: "Şifre en az 10 karakter olmalı." };
+  if (!(await setKioskAccountPassword(id, await bcrypt.hash(password, 10)))) return { error: "Kiosk hesabı bulunamadı." };
+  await addAudit({ adminUserId: admin.id, action: "KIOSK_ACCOUNT_PASSWORD_RESET", entity: "admin_user", entityId: id, beforeValue: null, afterValue: null });
+  revalidatePath("/kiosklar");
+  return { ok: true };
 }

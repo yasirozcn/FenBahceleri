@@ -1,6 +1,7 @@
-import { listKiosks } from "@/lib/db/repo";
+import { listKioskAccounts, listKiosks } from "@/lib/db/repo";
 import { formatDateTime } from "@/lib/sms";
 import { createKioskAction, deleteKioskAction, toggleKioskAction } from "../actions";
+import { AddKioskAccountForm, ResetKioskPasswordForm } from "./AccountForms";
 import DeleteKioskButton from "./DeleteKioskButton";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ function isOnline(lastSeenAt: string | null): boolean {
 }
 
 export default async function KiosksPage() {
-  const kiosks = await listKiosks();
+  const [kiosks, accounts] = await Promise.all([listKiosks(), listKioskAccounts()]);
   return (
     <div className="space-y-6">
       <div>
@@ -77,6 +78,37 @@ export default async function KiosksPage() {
           </label>
           <button className="btn btn-primary h-11 rounded-xl px-5">Ekle</button>
         </form>
+      </section>
+      <section className="card overflow-x-auto p-5 md:p-6">
+        <h2 className="text-lg font-bold">Kiosk tablet hesapları</h2>
+        <p className="mb-4 mt-1 text-sm text-slate-500">Tablette &quot;Yönetici girişi&quot; ile kullanılan hesaplar. Bu hesaplar panele giremez. Şifreler görüntülenemez, yalnızca yenisi verilebilir.</p>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Ad</th>
+              <th>E-posta</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {accounts.map((a) => (
+              <tr key={a.id}>
+                <td className="font-bold">{a.fullName}</td>
+                <td className="text-sm">{a.email}</td>
+                <td>
+                  <ResetKioskPasswordForm accountId={a.id} />
+                </td>
+              </tr>
+            ))}
+            {accounts.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-slate-400">Henüz kiosk hesabı yok.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <h3 className="mb-3 mt-6 text-base font-bold">Yeni kiosk hesabı</h3>
+        <AddKioskAccountForm />
       </section>
     </div>
   );

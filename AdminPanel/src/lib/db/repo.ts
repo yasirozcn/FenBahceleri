@@ -165,6 +165,23 @@ export async function getAdmin(id: string): Promise<AdminUser | null> {
   return first(await q<AdminUser>("SELECT * FROM admin_users WHERE id = $1", [id]));
 }
 
+/** Kiosk tableti hesapları (şifre özeti olmadan). */
+export function listKioskAccounts(): Promise<Pick<AdminUser, "id" | "fullName" | "email">[]> {
+  return q("SELECT id, full_name, email FROM admin_users WHERE role = 'KIOSK' ORDER BY full_name");
+}
+
+export async function createKioskAccount(fullName: string, email: string, passwordHash: string): Promise<AdminUser> {
+  const account: AdminUser = { id: newId("adm"), fullName: fullName.trim(), email: email.trim(), role: "KIOSK", passwordHash, twoFactorEnabled: false };
+  await tx((c) => insertRow(c, "admin_users", account));
+  return account;
+}
+
+/** Yalnızca KIOSK rolündeki hesabın şifresini değiştirir; hesap yoksa false döner. */
+export async function setKioskAccountPassword(id: string, passwordHash: string): Promise<boolean> {
+  const rows = await q("UPDATE admin_users SET password_hash = $2 WHERE id = $1 AND role = 'KIOSK' RETURNING id", [id, passwordHash]);
+  return rows.length > 0;
+}
+
 // ---------------------------------------------------------------- kiosklar
 
 export function listKiosks(): Promise<Kiosk[]> {

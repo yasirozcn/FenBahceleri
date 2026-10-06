@@ -113,6 +113,7 @@ docker compose exec app node scripts/create-admin.mjs --email kapi@okulunuz.com 
 ```
 
 Aynı komut aynı e-postayla tekrar çalıştırılırsa şifre güncellenir (şifre unutulursa).
+Kiosk tableti hesapları panelden de yönetilebilir: **Kiosklar → Kiosk tablet hesapları** bölümünde yeni hesap oluşturulur ve unutulan şifre sıfırlanır (şifre en az 10 karakter; mevcut şifre görüntülenemez).
 Betik doğrudan veritabanına (`admin_users` tablosu) yazar; tek farkı şifreyi panelin beklediği bcrypt özetine çevirmesidir. SQL ile eklemek isterseniz önce özeti üretmeniz gerekir (bkz. 5b).
 
 Ardından panelde (`https://ALAN-ADI/login`):
